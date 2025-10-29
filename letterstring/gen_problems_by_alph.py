@@ -493,15 +493,25 @@ if args.num_permuted != 'greek' and args.num_permuted != 'symb':
         # all_realworld_sort = gen_prob_subset(standard_len=4, N_generalize=1, trans_allowed=['sort'], gen_allowed=['realworld'])
 
         # Combine problems
-        all_prob_types = [all_larger_int, all_longer_targ, all_group, all_interleaved, all_letter2num, all_reverse,
-                        all_2gen_split[0], all_2gen_split[1], all_2gen_split[2], all_2gen_split[3], all_2gen_split[4], all_2gen_split[5], all_2gen_split[6], 
-                        all_3gen_split[0], all_3gen_split[1], all_3gen_split[2], all_3gen_split[3], all_3gen_split[4], all_3gen_split[5], all_3gen_split[6]]
+        zero_gen_prob_types = [all_succ, all_pred, all_add_letter, all_remove_redundant, all_fix_alphabet, all_sort, all_attn]
+        one_gen_prob_types = [all_larger_int, all_longer_targ, all_group, all_interleaved, all_letter2num, all_reverse]
+        two_gen_prob_types = all_2gen_split
+        three_gen_prob_types = all_3gen_split
+        all_prob_types = zero_gen_prob_types + one_gen_prob_types + two_gen_prob_types + three_gen_prob_types
+        # all_prob_types = [all_larger_int, all_longer_targ, all_group, all_interleaved, all_letter2num, all_reverse,
+                        # all_2gen_split[0], all_2gen_split[1], all_2gen_split[2], all_2gen_split[3], all_2gen_split[4], all_2gen_split[5], all_2gen_split[6], 
+                        # all_3gen_split[0], all_3gen_split[1], all_3gen_split[2], all_3gen_split[3], all_3gen_split[4], all_3gen_split[5], all_3gen_split[6]]
         # for the human problems:
         # [all_succ, all_pred, all_add_letter, all_remove_redundant, all_fix_alphabet, all_sort, all_attn]
-                        
-        all_prob_type_names = ['larger_int', 'longer_targ', 'group', 'interleaved', 'letter2num', 'reverse',
-                            '2gen_split1', '2gen_split2', '2gen_split3', '2gen_split4', '2gen_split5', '2gen_split6', '2gensplit7',
-                            '3gen_split1', '3gen_split2', '3gen_split3', '3gen_split4', '3gen_split5', '3gen_split6', '3gensplit7']
+        
+        zero_gen_prob_names = ['succ', 'pred', 'add_letter', 'remove_redundant', 'fix_alphabet', 'sort', 'attn']
+        one_gen_prob_names = ['larger_int', 'longer_targ', 'group', 'interleaved', 'letter2num', 'reverse']
+        two_gen_prob_names = ['2gen_split1', '2gen_split2', '2gen_split3', '2gen_split4', '2gen_split5', '2gen_split6', '2gensplit7']
+        three_gen_prob_names = ['3gen_split1', '3gen_split2', '3gen_split3', '3gen_split4', '3gen_split5', '3gen_split6', '3gensplit7']
+        all_prob_type_names = zero_gen_prob_names + one_gen_prob_names + two_gen_prob_names + three_gen_prob_names
+        # all_prob_type_names = ['larger_int', 'longer_targ', 'group', 'interleaved', 'letter2num', 'reverse',
+                            # '2gen_split1', '2gen_split2', '2gen_split3', '2gen_split4', '2gen_split5', '2gen_split6', '2gensplit7',
+                            # '3gen_split1', '3gen_split2', '3gen_split3', '3gen_split4', '3gen_split5', '3gen_split6', '3gensplit7']
         
         # human
         # ['succ', 'pred', 'add_letter', 'remove_redundant', 'fix_alphabet', 'sort', 'attn']

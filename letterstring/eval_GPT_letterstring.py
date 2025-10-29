@@ -5,7 +5,9 @@ import argparse
 import os
 import time
 import sys
-
+import torch 
+from transformers import AutoModelForCausalLM, AutoTokenizer
+from huggingface_hub import login
 
 def check_path(path):
 	if not os.path.exists(path):
@@ -18,12 +20,28 @@ parser.add_argument('--noprompt', action='store_true', help="Present problem wit
 parser.add_argument('--newprompt', action='store_true', help="Present problem with new prompt.")
 parser.add_argument('--promptstyle', help='Give a prompt style: human, minimal, hw, webb, webbplus')
 parser.add_argument('--num_permuted', help="give a number of letters in the alphabet to permute from 2 to 26")
-parser.add_argument('--gpt', help='give gpt model: 3, 35, 4')
+parser.add_argument('--gpt', help='give gpt model: 3, 35, 4', default=None)
+parser.add_argument('--model', help='give model name', default=None)
 parser.add_argument('--gen', help='give gen for generalized problems or nogen for non generalized')
+parser.add_argument('--hf_token', help='Huggingface token for model loading', default=None)
 
 
 args = parser.parse_args()
 print(args.promptstyle)
+
+# Helper function to return the generated response of the model in a clean format
+def clean_text(text: str) -> str:
+    if not text:
+        return text
+    text = text.strip()
+    if text.startswith("```") and text.endswith("```"):
+        text = text.strip("`").strip()
+    if len(text) >= 2 and (
+        (text[0] == '"' and text[-1] == '"')
+        or (text[0] == "“" and text[-1] == "”")
+    ):
+        text = text[1:-1].strip()
+    return text
 
 if args.promptstyle == "webb" and int(args.num_permuted) >1:
 	print("promptstyle webb can only be used with an unpermuted alphabet")
@@ -37,6 +55,27 @@ elif args.gpt == '35':
     kwargs = { "model":"gpt-3.5-turbo", "temperature":0, "max_tokens":40, "stop":"\n"}
 elif args.gpt == '4':
     kwargs = { "model":"gpt-4", "temperature":0, "max_tokens":40, "stop":"\n"}
+	
+# Load Qwen3  
+elif args.model is not None:
+	print(f"Loading model {args.model}...")
+	# if args.hf_token is not None:
+	# 	hf_token = args.hf_token
+	# else:	
+	# 	hf_token = "api_token_here"
+	# login(hf_token)
+	MAX_NEW_TOKENS = 512
+	# os.environ["HUGGINGFACEHUB_API_TOKEN"] = hf_token
+	model = AutoModelForCausalLM.from_pretrained(
+		args.model,
+		torch_dtype=torch.bfloat16 if torch.cuda.is_available() else torch.float32,
+		device_map="auto",
+		trust_remote_code=True,
+	)
+	tokenizer = AutoTokenizer.from_pretrained(args.model, trust_remote_code=True, use_fast=False)
+	print(f"Model {args.model} and tokenizer loaded.")
+
+
 
 # Load all problems
 if args.gen == 'gen':
@@ -62,7 +101,7 @@ for alph in all_prob.item().keys():
 	print(alph_string)
 
 	# Evaluate
-	N_trials_per_prob_type = 10
+	N_trials_per_prob_type = 1 # 10
 	all_prob_type_responses = []
 	count = 0
 	for p in range(N_prob_types):
@@ -79,7 +118,7 @@ for alph in all_prob.item().keys():
 				if args.promptstyle not in ["minimal", "hw", "webb","webbplus"]:			
 					prompt+='Use the following alphabet to guess the missing piece.\n\n' \
 						+ alph_string \
-						+ '\n\nNote that the alphabet may be in an unfamiliar order. Complete the pattern using this order.\n\n'
+						+ '\n\nNote that the alphabet may be in an unfamiliar order. Complete the pattern using this order. Provide only the answer.\n\n'
 				elif args.promptstyle == 'minimal':			
 					prompt+='Use the following alphabet to complete the pattern.\n\n' \
 						+ alph_string \
@@ -147,6 +186,10 @@ for alph in all_prob.item().keys():
 								{'role':'user', 'content':prompt}]
 			else:
 				print("please enter a promptstyle")
+			
+			print("PROMPT:")
+			print(prompt)
+
 
 			if args.gpt == '3':
 				comp_prompt = ''
@@ -154,6 +197,10 @@ for alph in all_prob.item().keys():
 					comp_prompt += '\n' + m['content']
 				comp_prompt=comp_prompt.strip('\n')
 				# print(comp_prompt)
+			elif args.model == "Qwen/Qwen3-8B":
+				messages = [{'role': 'user', 'content': prompt}]
+				# print(messages)
+				
 			else:
 				pass
 
@@ -166,6 +213,30 @@ for alph in all_prob.item().keys():
 					except:
 						print('trying again...')
 						time.sleep(5)
+				elif args.model == "Qwen/Qwen3-8B":
+					# Tokenize
+					text = tokenizer.apply_chat_template(
+						messages,
+						tokenize=False,
+						add_generation_prompt=True,
+						enable_thinking=False,
+					)
+					inputs = tokenizer([text], return_tensors="pt").to(model.device)
+					pad_id = tokenizer.eos_token_id if tokenizer.pad_token_id is None else tokenizer.pad_token_id
+					# Generate
+					gen = model.generate(
+						**inputs,
+						max_new_tokens=MAX_NEW_TOKENS,
+						do_sample=False,
+						temperature=0.0,
+						top_p=1.0,
+						eos_token_id=tokenizer.eos_token_id,
+						pad_token_id=pad_id,
+					)
+					out = tokenizer.batch_decode(gen[:, inputs["input_ids"].shape[1]:], skip_special_tokens=True)[0]
+					clean_out = clean_text(out)
+					response.append(clean_out)
+					print("Qwen response:", clean_out)
 				else:
 					try:
 						response = openai.ChatCompletion.create(messages=messages, **kwargs)
@@ -174,7 +245,9 @@ for alph in all_prob.item().keys():
 						time.sleep(5)
 
 			if args.gpt =='3':
-				prob_type_responses.append(response['choices'][0]['text'])	
+				prob_type_responses.append(response['choices'][0]['text'])
+			elif args.model == "Qwen/Qwen3-8B":
+				prob_type_responses.append(response)
 			else:
 				prob_type_responses.append(response['choices'][0]['message']['content'])
 				# print(response)
@@ -182,9 +255,15 @@ for alph in all_prob.item().keys():
 		all_prob_type_responses.append(prob_type_responses)
 		response_dict[alph] = all_prob_type_responses
 		# Save
-		path = f'GPT{args.gpt}_prob_predictions_multi_alph/{args.gen}'
+		if args.gpt is not None:
+			path = f'GPT{args.gpt}_prob_predictions_multi_alph/{args.gen}'
+		else:
+			path = f'{args.model.replace("/","_")}_prob_predictions_multi_alph/{args.gen}'
 		check_path(path)
-		save_fname = f'./{path}/gpt{args.gpt}_letterstring_results_{args.num_permuted}_multi_alph_gptprobs'
+		if args.gpt is not None:
+			save_fname = f'./{path}/gpt{args.gpt}_letterstring_results_{args.num_permuted}_multi_alph_gptprobs'
+		else:
+			save_fname = f'./{path}/{args.model.replace("/","_")}_letterstring_results_{args.num_permuted}_multi_alph_gptprobs'
 		if args.promptstyle:
 			save_fname += f'_{args.promptstyle}'
 		if args.sentence:
