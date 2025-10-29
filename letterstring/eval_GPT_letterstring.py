@@ -59,13 +59,7 @@ elif args.gpt == '4':
 # Load Qwen3  
 elif args.model is not None:
 	print(f"Loading model {args.model}...")
-	# if args.hf_token is not None:
-	# 	hf_token = args.hf_token
-	# else:	
-	# 	hf_token = "api_token_here"
-	# login(hf_token)
 	MAX_NEW_TOKENS = 512
-	# os.environ["HUGGINGFACEHUB_API_TOKEN"] = hf_token
 	model = AutoModelForCausalLM.from_pretrained(
 		args.model,
 		torch_dtype=torch.bfloat16 if torch.cuda.is_available() else torch.float32,
