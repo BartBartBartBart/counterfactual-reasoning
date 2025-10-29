@@ -59,7 +59,7 @@ elif args.gpt == '4':
 # Load Qwen3  
 elif args.model is not None:
 	print(f"Loading model {args.model}...")
-	MAX_NEW_TOKENS = 512
+	MAX_NEW_TOKENS = 10
 	model = AutoModelForCausalLM.from_pretrained(
 		args.model,
 		torch_dtype=torch.bfloat16 if torch.cuda.is_available() else torch.float32,
@@ -79,7 +79,7 @@ elif args.gen == 'nogen':
 
 response_dict={}
 
-for alph in all_prob.item().keys():
+for alph in all_prob.item().keys(): # use all_prob.item().keys() for all alphabets
 	print(alph)
 	if (all_prob.item()[alph]['shuffled_letters'] is not None):
 		shuffled_letters = builtins.list(all_prob.item()[alph]['shuffled_letters'])
@@ -266,6 +266,6 @@ for alph in all_prob.item().keys():
 			save_fname += '_noprompt'
 		save_fname += '.npz'
 		np.savez(save_fname, all_prob_type_responses=response_dict, allow_pickle=True)
-
+	break
 
 
