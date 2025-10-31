@@ -59,7 +59,7 @@ elif args.gpt == '4':
 # Load Qwen3  
 elif args.model is not None:
 	print(f"Loading model {args.model}...")
-	MAX_NEW_TOKENS = 256
+	MAX_NEW_TOKENS = 10
 	model = AutoModelForCausalLM.from_pretrained(
 		args.model,
 		torch_dtype=torch.bfloat16 if torch.cuda.is_available() else torch.float32,
@@ -77,6 +77,14 @@ if args.gen == 'gen':
 elif args.gen == 'nogen':
 	all_prob = np.load(f'./problems/{args.gen}/all_prob_{args.num_permuted}_7_human.npz', allow_pickle=True)['all_prob']
 
+# Check contents of all_prob
+# Does it have target letters?
+first_key = list(all_prob.item().keys())[0]
+first_prob_type = list(all_prob.item()[first_key].keys())[2]  # Skip first two keys
+if 'tgt_letters' not in all_prob.item()[first_key][first_prob_type]:
+	print("all_prob does not contain target letters! Please regenerate all_prob with target letters included.")
+	sys.exit()
+
 response_dict={}
 
 for alph in all_prob.item().keys(): # use all_prob.item().keys() for all alphabets
@@ -87,6 +95,7 @@ for alph in all_prob.item().keys(): # use all_prob.item().keys() for all alphabe
 		shuffled_letters = None
 
 	shuffled_alphabet = builtins.list(all_prob.item()[alph]['shuffled_alphabet'])
+	target_letters = all_prob.item()[alph][first_prob_type]['tgt_letters']
 
 	prob_types = builtins.list(all_prob.item()[alph].keys())[2:] # first two items are list of shuffled letters and shuflled alphabet: skip this
 	N_prob_types = len(prob_types)
@@ -251,7 +260,12 @@ for alph in all_prob.item().keys(): # use all_prob.item().keys() for all alphabe
 				# print(response)
 			count += 1
 		all_prob_type_responses.append(prob_type_responses)
-		response_dict[alph] = all_prob_type_responses
+		response_dict[alph] = {
+			'all_prob_type_responses': all_prob_type_responses,
+			'shuffled_letters': shuffled_letters,
+			'shuffled_alphabet': shuffled_alphabet,
+			'target_letters': target_letters
+		}
 		# Save
 		if args.gpt is not None:
 			path = f'GPT{args.gpt}_prob_predictions_multi_alph/{args.gen}'
