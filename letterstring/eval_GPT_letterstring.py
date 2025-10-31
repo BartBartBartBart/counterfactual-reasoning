@@ -59,7 +59,7 @@ elif args.gpt == '4':
 # Load Qwen3  
 elif args.model is not None:
 	print(f"Loading model {args.model}...")
-	MAX_NEW_TOKENS = 10
+	MAX_NEW_TOKENS = 256
 	model = AutoModelForCausalLM.from_pretrained(
 		args.model,
 		torch_dtype=torch.bfloat16 if torch.cuda.is_available() else torch.float32,
@@ -125,6 +125,8 @@ for alph in all_prob.item().keys(): # use all_prob.item().keys() for all alphabe
 					prompt += "Let's try to complete the pattern:\n\n"
 				elif args.promptstyle == "webbplus":
 					prompt += "Let's try to complete the pattern. Just give the letters that complete the pattern and nothing else at all. Do not describe the pattern.\n\n"
+				# elif args.promptstyle == "analogical":
+				# 	prompt += "Use the following alphabet to complete the pattern.\n\n"
 			if args.sentence:
 				prompt += 'If '
 				for i in range(len(prob[0][0])):
@@ -162,6 +164,8 @@ for alph in all_prob.item().keys(): # use all_prob.item().keys() for all alphabe
 					prompt += '] ['
 				else:
 					prompt += '] [ ? ]'
+				if args.promptstyle == "analogical":
+					prompt += '\n\nFirst, describe 3 relevant exemplars that are distinct from this problem. Then give the final answer. Answer within 20 words. Do not include any other text.'
 			if args.promptstyle == "human":
 				messages = [{'role': 'system', 'content':'You are able to solve letter-string analogies'},
 								{'role': 'user', 'content': "In this study, you will be presented with a series of patterns involving alphanumeric characters, together with an example alphabet.\n\n" +
@@ -175,7 +179,7 @@ for alph in all_prob.item().keys(): # use all_prob.item().keys() for all alphabe
 								{'role':'assistant', 'content': 'h h h'},
 								{'role':'user', 'content': "In this case, the missing piece is 'h h h'\nNote that in the given alphabet, 'b' is the letter after 'a' and 'h' is the letter after 'c'"},
 								{'role':'user', 'content':prompt}]
-			elif args.promptstyle in ["minimal", "hw", "webb","webbplus"]:
+			elif args.promptstyle in ["minimal", "hw", "webb","webbplus", "analogical"]:
 				messages = [{'role': 'system', 'content':'You are able to solve letter-string analogies'},
 								{'role':'user', 'content':prompt}]
 			else:
