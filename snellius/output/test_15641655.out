@@ -1,0 +1,31 @@
+============================================================================================== 
+Warning! Mixing Conda and module environments may lead to corruption of the
+user environment. 
+We do not recommend users mixing those two environments unless absolutely
+necessary. Note that 
+SURF does not provide any support for Conda environment.
+For more information, please refer to our software policy page:
+https://servicedesk.surf.nl/wiki/display/WIKI/Software+policy+Snellius#SoftwarepolicySnellius-UseofAnacondaandMinicondaenvironmentsonSnellius 
+
+Remember that many packages have already been installed on the system and can
+be loaded using 
+the 'module load <package__name>' command. If you are uncertain if a package is
+already available 
+on the system, please use 'module avail' or 'module spider' to search for it.
+============================================================================================== 
+`torch_dtype` is deprecated! Use `dtype` instead!
+None
+Loading model Qwen/Qwen3-8B...
+Fetching 5 files:   0%|          | 0/5 [00:00<?, ?it/s]Fetching 5 files:  20%|██        | 1/5 [00:07<00:29,  7.42s/it]Fetching 5 files: 100%|██████████| 5/5 [00:07<00:00,  1.48s/it]
+Loading checkpoint shards:   0%|          | 0/5 [00:00<?, ?it/s]Loading checkpoint shards:  20%|██        | 1/5 [00:04<00:18,  4.51s/it]Loading checkpoint shards:  40%|████      | 2/5 [00:08<00:13,  4.49s/it]Loading checkpoint shards:  60%|██████    | 3/5 [00:13<00:08,  4.46s/it]Loading checkpoint shards:  80%|████████  | 4/5 [00:16<00:04,  4.11s/it]Loading checkpoint shards: 100%|██████████| 5/5 [00:18<00:00,  3.13s/it]Loading checkpoint shards: 100%|██████████| 5/5 [00:18<00:00,  3.67s/it]
+Model Qwen/Qwen3-8B and tokenizer loaded.
+Traceback (most recent call last):
+  File "/gpfs/home5/bdenboef/counterfactual-reasoning/snellius/jobs/../../letterstring/eval_GPT_letterstring.py", line 78, in <module>
+    all_prob = np.load(f'./problems/{args.gen}/all_prob_{args.num_permuted}_7_human.npz', allow_pickle=True)['all_prob']
+               ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/bdenboef/.conda/envs/thesis/lib/python3.14/site-packages/numpy/lib/_npyio_impl.py", line 454, in load
+    fid = stack.enter_context(open(os.fspath(file), "rb"))
+                              ~~~~^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: './problems/nogen/all_prob_1_7_human.npz'
+srun: error: gcn5: task 0: Exited with exit code 1
+srun: Terminating StepId=15641655.0
