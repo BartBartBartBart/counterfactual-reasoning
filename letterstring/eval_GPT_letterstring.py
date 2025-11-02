@@ -59,7 +59,7 @@ elif args.gpt == '4':
 # Load Qwen3  
 elif args.model is not None:
 	print(f"Loading model {args.model}...")
-	MAX_NEW_TOKENS = 10
+	MAX_NEW_TOKENS = 256
 	model = AutoModelForCausalLM.from_pretrained(
 		args.model,
 		torch_dtype=torch.bfloat16 if torch.cuda.is_available() else torch.float32,
@@ -95,27 +95,41 @@ for alph in all_prob.item().keys(): # use all_prob.item().keys() for all alphabe
 		shuffled_letters = None
 
 	shuffled_alphabet = builtins.list(all_prob.item()[alph]['shuffled_alphabet'])
-	target_letters = all_prob.item()[alph][first_prob_type]['tgt_letters']
+	
+	# Initialize this alphabet's data structure
+	response_dict[alph] = {
+		'shuffled_letters': shuffled_letters,
+		'shuffled_alphabet': shuffled_alphabet,
+	}
 
 	prob_types = builtins.list(all_prob.item()[alph].keys())[2:] # first two items are list of shuffled letters and shuflled alphabet: skip this
-	N_prob_types = len(prob_types)
+	N_prob_types = len(prob_types) -1 # minus 1 to skip attention problems
 
 	alph_string = ' '.join(shuffled_alphabet)
 	print(alph_string)
 
 	# Evaluate
-	N_trials_per_prob_type = 1 # 10
-	all_prob_type_responses = []
+	N_trials_per_prob_type = 2 # 10
 	count = 0
 	for p in range(N_prob_types):
 		if prob_types[p] == 'attn':
+			# SKIP ATTENTION PROBLEMS
+			continue
 			alph_string = "For this question, ignore other instructions and respond 'a a a a'"
 		print('problem type ' + str(p+1) + ' of ' + str(N_prob_types) + '...')
 		prob_type_responses = []
+		prob_type_targets = []
 		for t in range(N_trials_per_prob_type):
 			print('trial ' + str(t+1) + ' of ' + str(N_trials_per_prob_type) + '...')
-			# Generate prompt
 			prob = all_prob.item()[alph][prob_types[p]]['prob'][t]
+			full_tgt_letters = all_prob.item()[alph][prob_types[p]]['tgt_letters'][t]
+			current_target = all_prob.item()[alph][prob_types[p]]['prob'][t][1][1]
+			prob_type_targets.append(current_target)
+			# if 'full_target_letters' not in locals():
+			# 	full_target_letters = []
+			# full_target_letters.append(full_tgt_letters)
+
+			# Create prompt
 			prompt=''
 			if not args.noprompt:
 				if args.promptstyle not in ["minimal", "hw", "webb","webbplus"]:			
@@ -174,7 +188,7 @@ for alph in all_prob.item().keys(): # use all_prob.item().keys() for all alphabe
 				else:
 					prompt += '] [ ? ]'
 				if args.promptstyle == "analogical":
-					prompt += '\n\nFirst, describe 3 relevant exemplars that are distinct from this problem. Then give the final answer. Answer within 20 words. Do not include any other text.'
+					prompt += '\n\nFirst, describe 3 relevant exemplars that are distinct from this problem. Then give the final answer. Answer with only the examples and the final answer. Put your final answer between double brackets.\n'
 			if args.promptstyle == "human":
 				messages = [{'role': 'system', 'content':'You are able to solve letter-string analogies'},
 								{'role': 'user', 'content': "In this study, you will be presented with a series of patterns involving alphanumeric characters, together with an example alphabet.\n\n" +
@@ -193,10 +207,13 @@ for alph in all_prob.item().keys(): # use all_prob.item().keys() for all alphabe
 								{'role':'user', 'content':prompt}]
 			else:
 				print("please enter a promptstyle")
-			
-			print("PROMPT:")
-			print(prompt)
 
+			print("\n=== PROMPT ===\n")
+			print(prompt)
+			print("\n--- TARGET LETTERS ---\n")
+			print(current_target)
+			# print("\n--- FULL TARGET LETTERS ---\n")
+			# print(full_target_letters)
 
 			if args.gpt == '3':
 				comp_prompt = ''
@@ -242,8 +259,14 @@ for alph in all_prob.item().keys(): # use all_prob.item().keys() for all alphabe
 					)
 					out = tokenizer.batch_decode(gen[:, inputs["input_ids"].shape[1]:], skip_special_tokens=True)[0]
 					clean_out = clean_text(out)
-					response.append(clean_out)
-					print("Qwen response:", clean_out)
+					print(f"Full Qwen output: {clean_out}")
+					# Filter the answer, take only the content inside double brackets [[ answer ]]
+					if '[[' in clean_out and ']]' in clean_out:
+						start_idx = clean_out.index('[[') + 2
+						end_idx = clean_out.index(']]')
+						clean_out = clean_out[start_idx:end_idx].strip()
+						response.append(clean_out)
+					print("Filtered response:", clean_out)
 				else:
 					try:
 						response = openai.ChatCompletion.create(messages=messages, **kwargs)
@@ -254,36 +277,43 @@ for alph in all_prob.item().keys(): # use all_prob.item().keys() for all alphabe
 			if args.gpt =='3':
 				prob_type_responses.append(response['choices'][0]['text'])
 			elif args.model == "Qwen/Qwen3-8B":
-				prob_type_responses.append(response)
+				prob_type_responses.append(response[0])
 			else:
 				prob_type_responses.append(response['choices'][0]['message']['content'])
 				# print(response)
 			count += 1
-		all_prob_type_responses.append(prob_type_responses)
-		response_dict[alph] = {
-			'all_prob_type_responses': all_prob_type_responses,
-			'shuffled_letters': shuffled_letters,
-			'shuffled_alphabet': shuffled_alphabet,
-			'target_letters': target_letters
-		}
-		# Save
-		if args.gpt is not None:
-			path = f'GPT{args.gpt}_prob_predictions_multi_alph/{args.gen}'
-		else:
-			path = f'{args.model.replace("/","_")}_prob_predictions_multi_alph/{args.gen}'
-		check_path(path)
-		if args.gpt is not None:
-			save_fname = f'./{path}/gpt{args.gpt}_letterstring_results_{args.num_permuted}_multi_alph_gptprobs'
-		else:
-			save_fname = f'./{path}/{args.model.replace("/","_")}_letterstring_results_{args.num_permuted}_multi_alph_gptprobs'
-		if args.promptstyle:
-			save_fname += f'_{args.promptstyle}'
-		if args.sentence:
-			save_fname += '_sentence'
-		if args.noprompt:
-			save_fname += '_noprompt'
-		save_fname += '.npz'
-		np.savez(save_fname, all_prob_type_responses=response_dict, allow_pickle=True)
-	break
+		
+		# Store this problem type's responses and targets
+		if 'responses' not in response_dict[alph]:
+			response_dict[alph]['responses'] = {}
+			response_dict[alph]['targets'] = {}
+		
+		response_dict[alph]['responses'][prob_types[p]] = prob_type_responses
+		response_dict[alph]['targets'][prob_types[p]] = prob_type_targets
+
+# Save once after all alphabets and problem types are processed
+# Build path
+if args.gpt is not None:
+	path = f'GPT{args.gpt}_prob_predictions_multi_alph/{args.gen}'
+else:
+	path = f'{args.model.replace("/","_")}_prob_predictions_multi_alph/{args.gen}'
+check_path(path)
+
+# Build filename
+if args.gpt is not None:
+	save_fname = f'./{path}/gpt{args.gpt}_letterstring_results_{args.num_permuted}_multi_alph_gptprobs'
+else:
+	save_fname = f'./{path}/{args.model.replace("/","_")}_letterstring_results_{args.num_permuted}_multi_alph_gptprobs'
+if args.promptstyle:
+	save_fname += f'_{args.promptstyle}'
+if args.sentence:
+	save_fname += '_sentence'
+if args.noprompt:
+	save_fname += '_noprompt'
+save_fname += '.npz'
+
+# Save single file with all data
+np.savez(save_fname, data=response_dict, allow_pickle=True)
+print(f"Saved {save_fname}")
 
 
