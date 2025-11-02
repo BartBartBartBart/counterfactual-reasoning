@@ -25,9 +25,9 @@ def compute_accuracy(trues, predictions, shuffled):
     else:
         return 0, unshuffled_correct/unshuffled_tot, shuffled_tot, unshuffled_tot
 
-# data = np.load(f'/home/bart/uva/thesis/code/robust-analogy/letterstring/Qwen_Qwen3-8B_prob_predictions_multi_alph/nogen/Qwen_Qwen3-8B_letterstring_results_1_multi_alph_gptprobs.npz', allow_pickle=True)
+data = np.load(f'/home/bart/uva/thesis/code/counterfactual-reasoning/letterstring/Qwen_Qwen3-8B_prob_predictions_multi_alph/nogen/Qwen_Qwen3-8B_letterstring_results_1_multi_alph_gptprobs.npz', allow_pickle=True)
 # data = np.load(f'/home/bart/uva/thesis/code/counterfactual-reasoning/letterstring/GPT35_prob_predictions_multi_alph/nogen/gpt35_letterstring_results_1_multi_alph_hw.npz', allow_pickle=True)
-data = np.load(f'/home/bart/uva/thesis/code/counterfactual-reasoning/letterstring/controls/gpt3_letterstring_control_1_succ.npz', allow_pickle=True)
+# data = np.load(f'/home/bart/uva/thesis/code/counterfactual-reasoning/letterstring/controls/gpt3_letterstring_control_1_succ.npz', allow_pickle=True)
 all_prob_type_responses = data.files
 for alph in all_prob_type_responses:
     print(alph)
@@ -49,9 +49,9 @@ data = []
 # model = "Qwen/Qwen3-8B"
 gpt = 3
 
-# all_responses = np.load(f'/home/bart/uva/thesis/code/robust-analogy/letterstring/Qwen_Qwen3-8B_prob_predictions_multi_alph/nogen/Qwen_Qwen3-8B_letterstring_results_1_multi_alph_gptprobs.npz', allow_pickle=True)
+all_responses = np.load(f'/home/bart/uva/thesis/code/counterfactual-reasoning/letterstring/Qwen_Qwen3-8B_prob_predictions_multi_alph/nogen/Qwen_Qwen3-8B_letterstring_results_1_multi_alph_gptprobs.npz', allow_pickle=True)
 # all_responses = np.load(f'/home/bart/uva/thesis/code/counterfactual-reasoning/letterstring/GPT3_prob_predictions_multi_alph/nogen/gpt3_letterstring_results_1_multi_alph_hw.npz', allow_pickle=True)
-all_responses = np.load(f'/home/bart/uva/thesis/code/counterfactual-reasoning/letterstring/controls/gpt3_letterstring_control_1_succ.npz', allow_pickle=True)
+# all_responses = np.load(f'/home/bart/uva/thesis/code/counterfactual-reasoning/letterstring/controls/gpt3_letterstring_control_1_succ.npz', allow_pickle=True)
 all_responses = all_responses.files
 for alph in all_responses:
     shuffled_letters = all_responses[alph]['shuffled_letters']
