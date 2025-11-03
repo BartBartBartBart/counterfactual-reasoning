@@ -27,7 +27,6 @@ parser.add_argument('--hf_token', help='Huggingface token for model loading', de
 
 
 args = parser.parse_args()
-print(args.promptstyle)
 
 # Helper function to return the generated response of the model in a clean format
 def clean_text(text: str) -> str:
@@ -76,14 +75,6 @@ if args.gen == 'gen':
 	all_prob = np.load(f'./problems/{args.gen}/all_prob_{args.num_permuted}_7_gpt_human_alphs.npz', allow_pickle=True)['all_prob']
 elif args.gen == 'nogen':
 	all_prob = np.load(f'./problems/{args.gen}/all_prob_{args.num_permuted}_7_human.npz', allow_pickle=True)['all_prob']
-
-# Check contents of all_prob
-# Does it have target letters?
-first_key = list(all_prob.item().keys())[0]
-first_prob_type = list(all_prob.item()[first_key].keys())[2]  # Skip first two keys
-if 'tgt_letters' not in all_prob.item()[first_key][first_prob_type]:
-	print("all_prob does not contain target letters! Please regenerate all_prob with target letters included.")
-	sys.exit()
 
 response_dict={}
 
