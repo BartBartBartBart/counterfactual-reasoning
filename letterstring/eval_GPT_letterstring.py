@@ -126,7 +126,7 @@ for alph in all_prob.item().keys(): # use all_prob.item().keys() for all alphabe
 				if args.promptstyle not in ["minimal", "hw", "webb","webbplus"]:			
 					prompt+='Use the following alphabet to guess the missing piece.\n\n' \
 						+ alph_string \
-						+ '\n\nNote that the alphabet may be in an unfamiliar order. Complete the pattern using this order. Provide only the answer.\n\n'
+						+ '\n\nNote that the alphabet may be in an unfamiliar order. Complete the pattern using this order. Provide only the answer between double brackets.\n\n'
 				elif args.promptstyle == 'minimal':			
 					prompt+='Use the following alphabet to complete the pattern.\n\n' \
 						+ alph_string \
