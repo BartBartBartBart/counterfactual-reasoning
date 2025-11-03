@@ -45,7 +45,7 @@ for alph in responses:
         correct = 0 
 
         for pred, true in zip(prob_type_responses, prob_type_trues):
-            pred = pred.strip(" '").lower()
+            pred = pred.strip(" '").replace(" ", "").lower()
             true = ''.join(true).lower()
             print(f'Pred: {pred}, True: {true}')
             if pred == true:
@@ -67,3 +67,23 @@ for alph, alph_acc in acc_dict.items():
     for prob_type, acc in alph_acc.items():
         print(f"Problem Type: {prob_type}, Accuracy: {acc}")
     print("\n")
+
+    # Print average accuracy across all alphabets
+overall_accuracies = {}
+for alph, alph_acc in acc_dict.items():
+    for prob_type, acc in alph_acc.items():
+        if prob_type not in overall_accuracies:
+            overall_accuracies[prob_type] = []
+        overall_accuracies[prob_type].append(acc)
+print(f"\n=== Overall Average Accuracies ===\n")
+for prob_type, accs in overall_accuracies.items():
+    average_acc = sum(accs) / len(accs)
+    print(f"Problem Type: {prob_type}, Average Accuracy: {average_acc}")
+# Save accuracies to a CSV file
+df_rows = []
+for alph, alph_acc in acc_dict.items():
+    for prob_type, acc in alph_acc.items():
+        df_rows.append({'Alphabet': alph, 'Problem_Type': prob_type, 'Accuracy': acc})
+df = pd.DataFrame(df_rows)
+output_csv = f"results/{args.model}_letterstring_accuracies_{args.num_permuted}_{args.prompt}.csv"
+df.to_csv(output_csv, index=False)
