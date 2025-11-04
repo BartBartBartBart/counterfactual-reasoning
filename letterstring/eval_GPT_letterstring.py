@@ -100,7 +100,7 @@ for alph in all_prob.item().keys(): # use all_prob.item().keys() for all alphabe
 	print(alph_string)
 
 	# Evaluate
-	N_trials_per_prob_type = 2 # 10
+	N_trials_per_prob_type = 10
 	count = 0
 	for p in range(N_prob_types):
 		if prob_types[p] == 'attn':

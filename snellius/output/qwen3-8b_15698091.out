@@ -1,24 +1,0 @@
-============================================================================================== 
-Warning! Mixing Conda and module environments may lead to corruption of the
-user environment. 
-We do not recommend users mixing those two environments unless absolutely
-necessary. Note that 
-SURF does not provide any support for Conda environment.
-For more information, please refer to our software policy page:
-https://servicedesk.surf.nl/wiki/display/WIKI/Software+policy+Snellius#SoftwarepolicySnellius-UseofAnacondaandMinicondaenvironmentsonSnellius 
-
-Remember that many packages have already been installed on the system and can
-be loaded using 
-the 'module load <package__name>' command. If you are uncertain if a package is
-already available 
-on the system, please use 'module avail' or 'module spider' to search for it.
-============================================================================================== 
-`torch_dtype` is deprecated! Use `dtype` instead!
-analogical
-Loading model Qwen/Qwen3-14B...
-Fetching 8 files:   0%|          | 0/8 [00:00<?, ?it/s]Fetching 8 files:  12%|█▎        | 1/8 [00:11<01:21, 11.71s/it]Fetching 8 files:  88%|████████▊ | 7/8 [00:11<00:01,  1.24s/it]Fetching 8 files: 100%|██████████| 8/8 [00:11<00:00,  1.48s/it]
-Loading checkpoint shards:   0%|          | 0/8 [00:00<?, ?it/s]Loading checkpoint shards:  12%|█▎        | 1/8 [00:04<00:29,  4.17s/it]Loading checkpoint shards:  25%|██▌       | 2/8 [00:08<00:25,  4.26s/it]Loading checkpoint shards:  38%|███▊      | 3/8 [00:12<00:21,  4.28s/it]Loading checkpoint shards:  50%|█████     | 4/8 [00:17<00:17,  4.29s/it]Loading checkpoint shards:  62%|██████▎   | 5/8 [00:18<00:09,  3.15s/it]Loading checkpoint shards: 100%|██████████| 8/8 [00:18<00:00,  2.29s/it]
-Some parameters are on the meta device because they were offloaded to the cpu.
-[2025-11-02T22:37:46.015] error: *** JOB 15698091 ON gcn2 CANCELLED AT 2025-11-02T22:37:46 DUE TO TIME LIMIT ***
-[2025-11-02T22:37:46.016] error: *** STEP 15698091.0 ON gcn2 CANCELLED AT 2025-11-02T22:37:46 DUE TO TIME LIMIT ***
-srun: Job step aborted: Waiting up to 32 seconds for job step to finish.
