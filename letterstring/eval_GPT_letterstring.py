@@ -256,8 +256,9 @@ for alph in all_prob.item().keys(): # use all_prob.item().keys() for all alphabe
 						start_idx = clean_out.index('[[') + 2
 						end_idx = clean_out.index(']]')
 						clean_out = clean_out[start_idx:end_idx].strip()
-						response.append(clean_out)
-					print("Filtered response:", clean_out)
+						print(f"Filtered Qwen output: {clean_out}")
+					response.append(clean_out)
+					# print("Filtered response:", clean_out)
 				else:
 					try:
 						response = openai.ChatCompletion.create(messages=messages, **kwargs)
