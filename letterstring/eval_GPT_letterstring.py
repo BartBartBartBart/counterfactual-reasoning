@@ -24,6 +24,7 @@ parser.add_argument('--gpt', help='give gpt model: 3, 35, 4', default=None)
 parser.add_argument('--model', help='give model name', default=None)
 parser.add_argument('--gen', help='give gen for generalized problems or nogen for non generalized')
 parser.add_argument('--hf_token', help='Huggingface token for model loading', default=None)
+parser.add_argument('--verbose', action='store_true', help="Print verbose output.")
 
 
 args = parser.parse_args()
@@ -116,9 +117,6 @@ for alph in all_prob.item().keys(): # use all_prob.item().keys() for all alphabe
 			full_tgt_letters = all_prob.item()[alph][prob_types[p]]['tgt_letters'][t]
 			current_target = all_prob.item()[alph][prob_types[p]]['prob'][t][1][1]
 			prob_type_targets.append(current_target)
-			# if 'full_target_letters' not in locals():
-			# 	full_target_letters = []
-			# full_target_letters.append(full_tgt_letters)
 
 			# Create prompt
 			prompt=''
@@ -126,11 +124,11 @@ for alph in all_prob.item().keys(): # use all_prob.item().keys() for all alphabe
 				if args.promptstyle not in ["minimal", "hw", "webb","webbplus"]:			
 					prompt+='Use the following alphabet to guess the missing piece.\n\n' \
 						+ alph_string \
-						+ '\n\nNote that the alphabet may be in an unfamiliar order. Complete the pattern using this order. Provide only the answer between double brackets.\n\n'
+						+ '\n\nNote that the alphabet may be in an unfamiliar order. Complete the pattern using this order.\n\n'
 				elif args.promptstyle == 'minimal':			
 					prompt+='Use the following alphabet to complete the pattern.\n\n' \
 						+ alph_string \
-						+ '\n\nNote that the alphabet may be in an unfamiliar order. Complete the pattern using this order.\n\n'
+						+ '\n\nNote that the alphabet may be in an unfamiliar order. Complete the pattern using this order. Answer with only the final answer and nothing else. Put your answer between double brackets.\n\n'
 				elif args.promptstyle == 'hw':			
 					prompt+='Use this fictional alphabet: \n\n' \
 						+ alph_string \
@@ -199,12 +197,12 @@ for alph in all_prob.item().keys(): # use all_prob.item().keys() for all alphabe
 			else:
 				print("please enter a promptstyle")
 
-			print("\n=== PROMPT ===\n")
-			print(prompt)
-			print("\n--- TARGET LETTERS ---\n")
-			print(current_target)
-			# print("\n--- FULL TARGET LETTERS ---\n")
-			# print(full_target_letters)
+	        # If verbose or first trial
+			if args.verbose or t == 0:
+				print("\n=== PROMPT ===\n")
+				print(prompt)
+				print("\n--- TARGET LETTERS ---\n")
+				print(current_target)
 
 			if args.gpt == '3':
 				comp_prompt = ''
@@ -250,13 +248,15 @@ for alph in all_prob.item().keys(): # use all_prob.item().keys() for all alphabe
 					)
 					out = tokenizer.batch_decode(gen[:, inputs["input_ids"].shape[1]:], skip_special_tokens=True)[0]
 					clean_out = clean_text(out)
-					print(f"Full Qwen output: {clean_out}")
+					if args.verbose or t == 0:
+						print(f"Full Qwen output: {clean_out}")
 					# Filter the answer, take only the content inside double brackets [[ answer ]]
 					if '[[' in clean_out and ']]' in clean_out:
 						start_idx = clean_out.index('[[') + 2
 						end_idx = clean_out.index(']]')
 						clean_out = clean_out[start_idx:end_idx].strip()
-						print(f"Filtered Qwen output: {clean_out}")
+						if args.verbose or t == 0:
+							print(f"Filtered Qwen output: {clean_out}")
 					response.append(clean_out)
 					# print("Filtered response:", clean_out)
 				else:
