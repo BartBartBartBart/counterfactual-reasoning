@@ -1,0 +1,88 @@
+============================================================================================== 
+Warning! Mixing Conda and module environments may lead to corruption of the
+user environment. 
+We do not recommend users mixing those two environments unless absolutely
+necessary. Note that 
+SURF does not provide any support for Conda environment.
+For more information, please refer to our software policy page:
+https://servicedesk.surf.nl/wiki/display/WIKI/Software+policy+Snellius#SoftwarepolicySnellius-UseofAnacondaandMinicondaenvironmentsonSnellius 
+
+Remember that many packages have already been installed on the system and can
+be loaded using 
+the 'module load <package__name>' command. If you are uncertain if a package is
+already available 
+on the system, please use 'module avail' or 'module spider' to search for it.
+============================================================================================== 
+`torch_dtype` is deprecated! Use `dtype` instead!
+Loading model Qwen/Qwen3-8B...
+Loading checkpoint shards:   0%|          | 0/5 [00:00<?, ?it/s]Loading checkpoint shards:  20%|██        | 1/5 [00:01<00:07,  1.80s/it]Loading checkpoint shards:  40%|████      | 2/5 [00:03<00:05,  1.77s/it]Loading checkpoint shards:  60%|██████    | 3/5 [00:05<00:03,  1.74s/it]Loading checkpoint shards:  80%|████████  | 4/5 [00:06<00:01,  1.59s/it]Loading checkpoint shards: 100%|██████████| 5/5 [00:07<00:00,  1.21s/it]Loading checkpoint shards: 100%|██████████| 5/5 [00:07<00:00,  1.43s/it]
+The following generation flags are not valid and may be ignored: ['temperature', 'top_k']. Set `TRANSFORMERS_VERBOSITY=info` for more details.
+Model Qwen/Qwen3-8B and tokenizer loaded.
+symb_0
+> $ ) * @ = & < + !
+problem type 1 of 1...
+trial 1 of 10...
+
+=== PROMPT ===
+
+Use the following alphabet to complete the pattern.
+
+> $ ) * @ = & < + !
+
+Note that the alphabet may be in an unfamiliar order. Complete the pattern using this order. Answer with only the final answer and nothing else. Put your answer between double brackets.
+
+[$ ) * @] [$ ) * =]
+[) * @ =] [
+
+--- TARGET LETTERS ---
+
+[')', '*', '@', '&']
+Full Qwen output: [) * @ =] [) * @ =]
+trial 2 of 10...
+trial 3 of 10...
+trial 4 of 10...
+trial 5 of 10...
+trial 6 of 10...
+trial 7 of 10...
+trial 8 of 10...
+trial 9 of 10...
+trial 10 of 10...
+symb_1
+& > $ ! + ) < @ = *
+problem type 1 of 1...
+trial 1 of 10...
+
+=== PROMPT ===
+
+Use the following alphabet to complete the pattern.
+
+& > $ ! + ) < @ = *
+
+Note that the alphabet may be in an unfamiliar order. Complete the pattern using this order. Answer with only the final answer and nothing else. Put your answer between double brackets.
+
+[) < @ =] [) < @ *]
+[+ ) < @] [
+
+--- TARGET LETTERS ---
+
+['+', ')', '<', '=']
+Full Qwen output: [) < @ =] [) < @ *]  
+[+ ) < @] [! + ) <]  
+
+The pattern appears to be shifting the elements in a specific order. Observing the pattern, the next logical step would be:
+
+[! + ) <] [! + ) =]  
+
+Final answer:  
+[[! + ) <] [! + ) =]]
+Filtered Qwen output: ! + ) <] [! + ) =
+trial 2 of 10...
+trial 3 of 10...
+trial 4 of 10...
+trial 5 of 10...
+trial 6 of 10...
+trial 7 of 10...
+trial 8 of 10...
+trial 9 of 10...
+trial 10 of 10...
+Saved ./Qwen_Qwen3-8B_prob_predictions_multi_alph/nogen/Qwen_Qwen3-8B_letterstring_results_symb_multi_alph_gptprobs_minimal.npz
