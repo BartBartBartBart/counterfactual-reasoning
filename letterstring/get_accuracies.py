@@ -46,6 +46,8 @@ for alph in responses:
 
         for pred, true in zip(prob_type_responses, prob_type_trues):
             pred = pred.strip(" '").replace(" ", "").lower()
+            if type(true[0]) == np.int64:
+                true = [str(x) for x in true]
             true = ''.join(true).lower()
             print(f'Pred: {pred}, True: {true}')
             if pred == true:

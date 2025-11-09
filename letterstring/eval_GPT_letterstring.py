@@ -25,7 +25,7 @@ parser.add_argument('--model', help='give model name', default=None)
 parser.add_argument('--gen', help='give gen for generalized problems or nogen for non generalized')
 parser.add_argument('--hf_token', help='Huggingface token for model loading', default=None)
 parser.add_argument('--verbose', action='store_true', help="Print verbose output.")
-
+parser.add_argument('--extra-split', action='store_true', help="Test only 3gensplit7")
 
 args = parser.parse_args()
 
@@ -95,7 +95,7 @@ for alph in all_prob.item().keys(): # use all_prob.item().keys() for all alphabe
 	}
 
 	prob_types = builtins.list(all_prob.item()[alph].keys())[2:] # first two items are list of shuffled letters and shuflled alphabet: skip this
-	N_prob_types = len(prob_types) -1 # minus 1 to skip attention problems
+	N_prob_types = len(prob_types) # -1 # minus 1 to skip attention problems
 
 	alph_string = ' '.join(shuffled_alphabet)
 	print(alph_string, flush=True)
@@ -108,6 +108,9 @@ for alph in all_prob.item().keys(): # use all_prob.item().keys() for all alphabe
 			# SKIP ATTENTION PROBLEMS
 			continue
 			alph_string = "For this question, ignore other instructions and respond 'a a a a'"
+		# accidently left out 3gensplit7, test separately
+		elif args.extra_split and prob_types[p] != '3gensplit7':
+			continue
 		print('problem type ' + str(p+1) + ' of ' + str(N_prob_types) + '...', flush=True)
 		prob_type_responses = []
 		prob_type_targets = []
@@ -302,6 +305,8 @@ if args.sentence:
 	save_fname += '_sentence'
 if args.noprompt:
 	save_fname += '_noprompt'
+if args.extra_split:
+	save_fname += '_extrasplit'
 save_fname += '.npz'
 
 # Save single file with all data
