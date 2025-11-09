@@ -1,0 +1,60 @@
+============================================================================================== 
+Warning! Mixing Conda and module environments may lead to corruption of the
+user environment. 
+We do not recommend users mixing those two environments unless absolutely
+necessary. Note that 
+SURF does not provide any support for Conda environment.
+For more information, please refer to our software policy page:
+https://servicedesk.surf.nl/wiki/display/WIKI/Software+policy+Snellius#SoftwarepolicySnellius-UseofAnacondaandMinicondaenvironmentsonSnellius 
+
+Remember that many packages have already been installed on the system and can
+be loaded using 
+the 'module load <package__name>' command. If you are uncertain if a package is
+already available 
+on the system, please use 'module avail' or 'module spider' to search for it.
+============================================================================================== 
+Loading model Qwen/Qwen3-8B...
+Traceback (most recent call last):
+  File "/gpfs/home5/bdenboef/counterfactual-reasoning/letterstring/eval_GPT_letterstring.py", line 67, in <module>
+    model = AutoModelForCausalLM.from_pretrained(
+    	args.model,
+    ...<4 lines>...
+    	cache_dir="~/fresh_cache",
+    )
+  File "/home/bdenboef/.conda/envs/thesis/lib/python3.14/site-packages/transformers/models/auto/auto_factory.py", line 508, in from_pretrained
+    resolved_config_file = cached_file(
+        pretrained_model_name_or_path,
+    ...<4 lines>...
+        **hub_kwargs,
+    )
+  File "/home/bdenboef/.conda/envs/thesis/lib/python3.14/site-packages/transformers/utils/hub.py", line 322, in cached_file
+    file = cached_files(path_or_repo_id=path_or_repo_id, filenames=[filename], **kwargs)
+  File "/home/bdenboef/.conda/envs/thesis/lib/python3.14/site-packages/transformers/utils/hub.py", line 567, in cached_files
+    raise e
+  File "/home/bdenboef/.conda/envs/thesis/lib/python3.14/site-packages/transformers/utils/hub.py", line 479, in cached_files
+    hf_hub_download(
+    ~~~~~~~~~~~~~~~^
+        path_or_repo_id,
+        ^^^^^^^^^^^^^^^^
+    ...<10 lines>...
+        local_files_only=local_files_only,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/bdenboef/.conda/envs/thesis/lib/python3.14/site-packages/huggingface_hub/utils/_validators.py", line 114, in _inner_fn
+    return fn(*args, **kwargs)
+  File "/home/bdenboef/.conda/envs/thesis/lib/python3.14/site-packages/huggingface_hub/file_download.py", line 1007, in hf_hub_download
+    return _hf_hub_download_to_cache_dir(
+        # Destination
+    ...<14 lines>...
+        force_download=force_download,
+    )
+  File "/home/bdenboef/.conda/envs/thesis/lib/python3.14/site-packages/huggingface_hub/file_download.py", line 1181, in _hf_hub_download_to_cache_dir
+    _create_symlink(blob_path, pointer_path, new_blob=True)
+    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/bdenboef/.conda/envs/thesis/lib/python3.14/site-packages/huggingface_hub/file_download.py", line 731, in _create_symlink
+    os.symlink(src_rel_or_abs, abs_dst)
+    ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '../../blobs/d46195ac87f837ad233d02b2f80f148bf7c005e0' -> '/home/bdenboef/fresh_cache/models--Qwen--Qwen3-8B/snapshots/b968826d9c46dd6066d109eabc6255188de91218/config.json'
+srun: error: gcn2: task 0: Exited with exit code 1
+srun: Terminating StepId=15845575.0
