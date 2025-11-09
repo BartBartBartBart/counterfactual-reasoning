@@ -66,9 +66,9 @@ elif args.model is not None:
 		device_map="auto",
 		trust_remote_code=True,
 	)
+	print("Model loaded. Loading tokenizer...", flush=True)
 	tokenizer = AutoTokenizer.from_pretrained(args.model, trust_remote_code=True, use_fast=False)
-	print(f"Model {args.model} and tokenizer loaded.")
-
+	print(f"Model {args.model} and tokenizer loaded.", flush=True)
 
 
 # Load all problems
@@ -80,7 +80,7 @@ elif args.gen == 'nogen':
 response_dict={}
 
 for alph in all_prob.item().keys(): # use all_prob.item().keys() for all alphabets
-	print(alph)
+	print(alph, flush=True)
 	if (all_prob.item()[alph]['shuffled_letters'] is not None):
 		shuffled_letters = builtins.list(all_prob.item()[alph]['shuffled_letters'])
 	else:
@@ -98,7 +98,7 @@ for alph in all_prob.item().keys(): # use all_prob.item().keys() for all alphabe
 	N_prob_types = len(prob_types) -1 # minus 1 to skip attention problems
 
 	alph_string = ' '.join(shuffled_alphabet)
-	print(alph_string)
+	print(alph_string, flush=True)
 
 	# Evaluate
 	N_trials_per_prob_type = 10
@@ -108,11 +108,11 @@ for alph in all_prob.item().keys(): # use all_prob.item().keys() for all alphabe
 			# SKIP ATTENTION PROBLEMS
 			continue
 			alph_string = "For this question, ignore other instructions and respond 'a a a a'"
-		print('problem type ' + str(p+1) + ' of ' + str(N_prob_types) + '...')
+		print('problem type ' + str(p+1) + ' of ' + str(N_prob_types) + '...', flush=True)
 		prob_type_responses = []
 		prob_type_targets = []
 		for t in range(N_trials_per_prob_type):
-			print('trial ' + str(t+1) + ' of ' + str(N_trials_per_prob_type) + '...')
+			print('trial ' + str(t+1) + ' of ' + str(N_trials_per_prob_type) + '...', flush=True)
 			prob = all_prob.item()[alph][prob_types[p]]['prob'][t]
 			full_tgt_letters = all_prob.item()[alph][prob_types[p]]['tgt_letters'][t]
 			current_target = all_prob.item()[alph][prob_types[p]]['prob'][t][1][1]
@@ -199,10 +199,10 @@ for alph in all_prob.item().keys(): # use all_prob.item().keys() for all alphabe
 
 	        # If verbose or first trial
 			if args.verbose or t == 0:
-				print("\n=== PROMPT ===\n")
-				print(prompt)
-				print("\n--- TARGET LETTERS ---\n")
-				print(current_target)
+				print("\n=== PROMPT ===\n", flush=True)
+				print(prompt, flush=True)
+				print("\n--- TARGET LETTERS ---\n", flush=True)
+				print(current_target, flush=True)
 
 			if args.gpt == '3':
 				comp_prompt = ''
@@ -249,14 +249,14 @@ for alph in all_prob.item().keys(): # use all_prob.item().keys() for all alphabe
 					out = tokenizer.batch_decode(gen[:, inputs["input_ids"].shape[1]:], skip_special_tokens=True)[0]
 					clean_out = clean_text(out)
 					if args.verbose or t == 0:
-						print(f"Full Qwen output: {clean_out}")
+						print(f"Full Qwen output: {clean_out}", flush=True)
 					# Filter the answer, take only the content inside double brackets [[ answer ]]
 					if '[[' in clean_out and ']]' in clean_out:
 						start_idx = clean_out.index('[[') + 2
 						end_idx = clean_out.index(']]')
 						clean_out = clean_out[start_idx:end_idx].strip()
 						if args.verbose or t == 0:
-							print(f"Filtered Qwen output: {clean_out}")
+							print(f"Filtered Qwen output: {clean_out}", flush=True)
 					response.append(clean_out)
 					# print("Filtered response:", clean_out)
 				else:
