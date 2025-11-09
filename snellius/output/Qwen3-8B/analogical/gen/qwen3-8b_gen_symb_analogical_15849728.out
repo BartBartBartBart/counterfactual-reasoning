@@ -1,0 +1,121 @@
+============================================================================================== 
+Warning! Mixing Conda and module environments may lead to corruption of the
+user environment. 
+We do not recommend users mixing those two environments unless absolutely
+necessary. Note that 
+SURF does not provide any support for Conda environment.
+For more information, please refer to our software policy page:
+https://servicedesk.surf.nl/wiki/display/WIKI/Software+policy+Snellius#SoftwarepolicySnellius-UseofAnacondaandMinicondaenvironmentsonSnellius 
+
+Remember that many packages have already been installed on the system and can
+be loaded using 
+the 'module load <package__name>' command. If you are uncertain if a package is
+already available 
+on the system, please use 'module avail' or 'module spider' to search for it.
+============================================================================================== 
+`torch_dtype` is deprecated! Use `dtype` instead!
+Loading model Qwen/Qwen3-8B...
+Loading checkpoint shards:   0%|          | 0/5 [00:00<?, ?it/s]Loading checkpoint shards:  20%|██        | 1/5 [00:04<00:17,  4.45s/it]Loading checkpoint shards:  40%|████      | 2/5 [00:08<00:13,  4.49s/it]Loading checkpoint shards:  60%|██████    | 3/5 [00:13<00:08,  4.49s/it]Loading checkpoint shards:  80%|████████  | 4/5 [00:17<00:04,  4.14s/it]Loading checkpoint shards: 100%|██████████| 5/5 [00:18<00:00,  3.15s/it]Loading checkpoint shards: 100%|██████████| 5/5 [00:18<00:00,  3.69s/it]
+Model loaded. Loading tokenizer...
+Model Qwen/Qwen3-8B and tokenizer loaded.
+symb_0
+> $ ) * @ = & < + !
+problem type 1 of 1...
+trial 1 of 10...
+
+=== PROMPT ===
+
+Use the following alphabet to guess the missing piece.
+
+> $ ) * @ = & < + !
+
+Note that the alphabet may be in an unfamiliar order. Complete the pattern using this order.
+
+[$ ) * @] [$ ) * =]
+[) * @ =] [ ? ]
+
+First, describe 3 relevant exemplars that are distinct from this problem. Then give the final answer. Answer with only the examples and the final answer. Put your final answer between double brackets.
+
+
+--- TARGET LETTERS ---
+
+[')', '*', '@', '&']
+The following generation flags are not valid and may be ignored: ['temperature', 'top_k']. Set `TRANSFORMERS_VERBOSITY=info` for more details.
+Full Qwen output: **Exemplars:**
+
+1. [A B C D] [A B C]  
+2. [1 2 3 4] [1 2]  
+3. [X Y Z] [X Y]  
+
+**Final Answer:**  
+[[!]]  
+
+**Answer:**  
+[[!]]
+Filtered Qwen output: !
+trial 2 of 10...
+trial 3 of 10...
+trial 4 of 10...
+trial 5 of 10...
+trial 6 of 10...
+trial 7 of 10...
+trial 8 of 10...
+trial 9 of 10...
+trial 10 of 10...
+symb_1
+& > $ ! + ) < @ = *
+problem type 1 of 1...
+trial 1 of 10...
+
+=== PROMPT ===
+
+Use the following alphabet to guess the missing piece.
+
+& > $ ! + ) < @ = *
+
+Note that the alphabet may be in an unfamiliar order. Complete the pattern using this order.
+
+[) < @ =] [) < @ *]
+[+ ) < @] [ ? ]
+
+First, describe 3 relevant exemplars that are distinct from this problem. Then give the final answer. Answer with only the examples and the final answer. Put your final answer between double brackets.
+
+
+--- TARGET LETTERS ---
+
+['+', ')', '<', '=']
+Full Qwen output: **Exemplars:**
+
+1. [A B C D] [A B C]  
+2. [1 2 3 4] [1 2]  
+3. [X Y Z] [X Y]  
+
+**Final Answer:**  
+[[) < @ =] [) < @ *]  
+[+ ) < @] [ ? ]]  
+**Answer:** [[) < @ =] [) < @ *]  
+[+ ) < @] [ ? ]]  
+**Final Answer:** [[) < @ =] [) < @ *]  
+[+ ) < @] [ ? ]]  
+**Answer:** [[) < @ =] [) < @ *]  
+[+ ) < @] [ ? ]]  
+**Final Answer:** [[) < @ =] [) < @ *]  
+[+ ) < @] [ ? ]]  
+**Answer:** [[) < @ =] [) < @ *]  
+[+ ) < @] [ ? ]]  
+**Final Answer:** [[) < @ =] [) < @ *]  
+[+ ) < @] [ ? ]]  
+**Answer:** [[) < @ =] [) < @ *]  
+[+ ) <
+Filtered Qwen output: ) < @ =] [) < @ *]  
+[+ ) < @] [ ?
+trial 2 of 10...
+trial 3 of 10...
+trial 4 of 10...
+trial 5 of 10...
+trial 6 of 10...
+trial 7 of 10...
+trial 8 of 10...
+trial 9 of 10...
+trial 10 of 10...
+Saved ./Qwen_Qwen3-8B_prob_predictions_multi_alph/gen/Qwen_Qwen3-8B_letterstring_results_symb_multi_alph_gptprobs_analogical.npz
