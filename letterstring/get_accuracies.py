@@ -9,6 +9,7 @@ parser.add_argument('--problem', help='Give a problem: succ, pred')
 parser.add_argument('--num_permuted', help="give a number of letters in the alphabet to permute from 2 to 26")
 parser.add_argument('--model', help='give model: gpt3, gpt35, gpt4, Qwen_Qwen3-8B')
 parser.add_argument('--gen', help='gen or nogen')
+parser.add_argument('--extra_split', action='store_true', help='whether to include extra split for 3gen problems')
 args = parser.parse_args()
 
 # def compute_accuracy(trues, predictions):
@@ -23,9 +24,22 @@ args = parser.parse_args()
 acc_dict = {}
 
 response_folder = f"{args.model}_prob_predictions_multi_alph/{args.gen}"
-response_file = f"{args.model}_letterstring_results_{args.num_permuted}_multi_alph_gptprobs{"_" + args.prompt if args.prompt else ''}.npz"
+response_file = f"{args.model}_letterstring_results_{args.num_permuted}_multi_alph_gptprobs{"_" + args.promptstyle if args.promptstyle else ''}.npz"
 print(f"Loading responses from {response_folder}/{response_file}...")
 responses = np.load(f"{response_folder}/{response_file}", allow_pickle=True)["data"].item()
+
+if args.extra_split:
+    # Also load the extra split and merge
+    extra_response_file = f"{args.model}_letterstring_results_{args.num_permuted}_multi_alph_gptprobs_{args.promptstyle}_extrasplit.npz"
+    # This file contains only 3gensplit7, add it to the main responses
+    print(f"Loading extra split responses from {response_folder}/{extra_response_file}...")
+    extra_responses = np.load(f"{response_folder}/{extra_response_file}", allow_pickle=True)["data"].item()
+    for alph in extra_responses:
+        if alph in responses:
+            responses[alph]['responses']['3gensplit7'] = extra_responses[alph]['responses']['3gensplit7']
+            responses[alph]['targets']['3gensplit7'] = extra_responses[alph]['targets']['3gensplit7']
+        else:
+            responses[alph] = extra_responses[alph]
 
 for alph in responses:
 
@@ -70,17 +84,30 @@ for alph, alph_acc in acc_dict.items():
         print(f"Problem Type: {prob_type}, Accuracy: {acc}")
     print("\n")
 
-    # Print average accuracy across all alphabets
+# Print average accuracy across all alphabets
 overall_accuracies = {}
 for alph, alph_acc in acc_dict.items():
     for prob_type, acc in alph_acc.items():
-        if prob_type not in overall_accuracies:
-            overall_accuracies[prob_type] = []
-        overall_accuracies[prob_type].append(acc)
+        if prob_type.startswith('3gen'):
+            if '3gen' in overall_accuracies:
+                overall_accuracies['3gen'].append(acc)
+            else:
+                overall_accuracies['3gen'] = [acc]
+        elif prob_type.startswith('2gen'):
+            if '2gen' in overall_accuracies:
+                overall_accuracies['2gen'].append(acc)
+            else:
+                overall_accuracies['2gen'] = [acc]
+        elif prob_type in overall_accuracies:
+            overall_accuracies[prob_type].append(acc)
+        else:
+            overall_accuracies[prob_type] = [acc]
+
 print(f"\n=== Overall Average Accuracies ===\n")
 for prob_type, accs in overall_accuracies.items():
     average_acc = sum(accs) / len(accs)
     print(f"Problem Type: {prob_type}, Average Accuracy: {average_acc}")
+
 # Save accuracies to a CSV file
 # df_rows = []
 # for alph, alph_acc in acc_dict.items():
