@@ -1,0 +1,314 @@
+============================================================================================== 
+Warning! Mixing Conda and module environments may lead to corruption of the
+user environment. 
+We do not recommend users mixing those two environments unless absolutely
+necessary. Note that 
+SURF does not provide any support for Conda environment.
+For more information, please refer to our software policy page:
+https://servicedesk.surf.nl/wiki/display/WIKI/Software+policy+Snellius#SoftwarepolicySnellius-UseofAnacondaandMinicondaenvironmentsonSnellius 
+
+Remember that many packages have already been installed on the system and can
+be loaded using 
+the 'module load <package__name>' command. If you are uncertain if a package is
+already available 
+on the system, please use 'module avail' or 'module spider' to search for it.
+============================================================================================== 
+`torch_dtype` is deprecated! Use `dtype` instead!
+Loading model Qwen/Qwen3-8B...
+Loading checkpoint shards:   0%|          | 0/5 [00:00<?, ?it/s]Loading checkpoint shards:  20%|██        | 1/5 [00:05<00:20,  5.22s/it]Loading checkpoint shards:  40%|████      | 2/5 [00:09<00:14,  4.76s/it]Loading checkpoint shards:  60%|██████    | 3/5 [00:15<00:10,  5.12s/it]Loading checkpoint shards:  80%|████████  | 4/5 [00:18<00:04,  4.49s/it]Loading checkpoint shards: 100%|██████████| 5/5 [00:20<00:00,  3.36s/it]Loading checkpoint shards: 100%|██████████| 5/5 [00:20<00:00,  4.02s/it]
+Model loaded. Loading tokenizer...
+Model Qwen/Qwen3-8B and tokenizer loaded.
+alph_0
+a b c d e f g h i j k l m n o p q r s t u v w x y z
+Problem type: 3gensplit7 - 20/20
+trial 1 of 10...
+
+=== PROMPT ===
+
+Use the following alphabet to guess the missing piece.
+
+a b c d e f g h i j k l m n o p q r s t u v w x y z
+
+Note that the alphabet may be in an unfamiliar order. Complete the pattern using this order.
+
+[m n o p] [m n o p q]
+[25 23 21] [ ? ]
+
+First, describe 3 relevant exemplars that are distinct from this problem. Then give the final answer. Answer with only the examples and the final answer. Put your final answer between double brackets.
+
+
+--- TARGET LETTERS ---
+
+[np.int64(25), np.int64(23), np.int64(21), np.int64(19)]
+The following generation flags are not valid and may be ignored: ['temperature', 'top_k']. Set `TRANSFORMERS_VERBOSITY=info` for more details.
+Full Qwen output: **Exemplars:**
+
+1. [a b c] [a b c d]  
+   [1 3 5] [ ? ]  
+   *Pattern: Increasing by 1 letter, odd numbers.*
+
+2. [x y z] [x y z a]  
+   [24 25 1] [ ? ]  
+   *Pattern: Alphabet wrap-around, numbers correspond to letter positions.*
+
+3. [f g h i] [f g h i j]  
+   [6 8 10 12] [ ? ]  
+   *Pattern: Even numbers, increasing by 2.*
+
+**Final Answer:**  
+[[25 23 21 19]]
+Filtered Qwen output: 25 23 21 19
+trial 2 of 10...
+trial 3 of 10...
+trial 4 of 10...
+trial 5 of 10...
+trial 6 of 10...
+trial 7 of 10...
+trial 8 of 10...
+trial 9 of 10...
+trial 10 of 10...
+alph_1
+a b c d e f g h i j k l m n o p q r s t u v w x y z
+Problem type: 3gensplit7 - 20/20
+trial 1 of 10...
+
+=== PROMPT ===
+
+Use the following alphabet to guess the missing piece.
+
+a b c d e f g h i j k l m n o p q r s t u v w x y z
+
+Note that the alphabet may be in an unfamiliar order. Complete the pattern using this order.
+
+[u v w x x y] [u v w x y]
+[17 17 0 0 17 17 0 0 18 18 0 0 19 19 0 0 20 20 0 0 21 21 0 0] [ ? ]
+
+First, describe 3 relevant exemplars that are distinct from this problem. Then give the final answer. Answer with only the examples and the final answer. Put your final answer between double brackets.
+
+
+--- TARGET LETTERS ---
+
+[np.int64(17), np.int64(17), '0', '0', np.int64(18), np.int64(18), '0', '0', np.int64(19), np.int64(19), '0', '0', np.int64(20), np.int64(20), '0', '0', np.int64(21), np.int64(21), '0', '0']
+Full Qwen output: **Exemplars:**
+
+1. [a b c d] [a b c d e]  
+2. [1 2 3 4] [1 2 3 4 5]  
+3. [x y z a b] [x y z a b c]  
+
+**Final Answer:**  
+[[17 17 0 0 17 17 0 0 18 18 0 0 19 19 0 0 20 20 0 0 21 21 0 0 22 22 0 0]]  
+
+[[17 17 0 0 17 17 0 0 18 18 0 0 19 19 0 0 20 20 0 0 21 21 0 0 22 22 0 0]]
+Filtered Qwen output: 17 17 0 0 17 17 0 0 18 18 0 0 19 19 0 0 20 20 0 0 21 21 0 0 22 22 0 0
+trial 2 of 10...
+trial 3 of 10...
+trial 4 of 10...
+trial 5 of 10...
+trial 6 of 10...
+trial 7 of 10...
+trial 8 of 10...
+trial 9 of 10...
+trial 10 of 10...
+alph_2
+a b c d e f g h i j k l m n o p q r s t u v w x y z
+Problem type: 3gensplit7 - 20/20
+trial 1 of 10...
+
+=== PROMPT ===
+
+Use the following alphabet to guess the missing piece.
+
+a b c d e f g h i j k l m n o p q r s t u v w x y z
+
+Note that the alphabet may be in an unfamiliar order. Complete the pattern using this order.
+
+[a b c c d e] [a b c d e]
+[p p x x r r x x t t x x v v x x x x x x x x x x] [ ? ]
+
+First, describe 3 relevant exemplars that are distinct from this problem. Then give the final answer. Answer with only the examples and the final answer. Put your final answer between double brackets.
+
+
+--- TARGET LETTERS ---
+
+['p', 'p', 'x', 'x', 'r', 'r', 'x', 'x', 't', 't', 'x', 'x', 'v', 'v', 'x', 'x', 'x', 'x', 'x', 'x']
+Full Qwen output: **Exemplars:**
+
+1. [a b c d] [a b c d e]  
+2. [x y z] [x y z a]  
+3. [m n o p] [m n o p q]  
+
+**Final Answer:**  
+[[p p x x r r x x t t x x v v x x x x x x x x x x] [p p x x r r x x t t x x v v x x x x x x x x x x]]
+Filtered Qwen output: p p x x r r x x t t x x v v x x x x x x x x x x] [p p x x r r x x t t x x v v x x x x x x x x x x
+trial 2 of 10...
+trial 3 of 10...
+trial 4 of 10...
+trial 5 of 10...
+trial 6 of 10...
+trial 7 of 10...
+trial 8 of 10...
+trial 9 of 10...
+trial 10 of 10...
+alph_3
+a b c d e f g h i j k l m n o p q r s t u v w x y z
+Problem type: 3gensplit7 - 20/20
+trial 1 of 10...
+
+=== PROMPT ===
+
+Use the following alphabet to guess the missing piece.
+
+a b c d e f g h i j k l m n o p q r s t u v w x y z
+
+Note that the alphabet may be in an unfamiliar order. Complete the pattern using this order.
+
+[c c d e f g] [c d e f g]
+[d d x x e e x x f f x x g g x x h h x x i i x x i i x x j j x x k k x x l l x x] [ ? ]
+
+First, describe 3 relevant exemplars that are distinct from this problem. Then give the final answer. Answer with only the examples and the final answer. Put your final answer between double brackets.
+
+
+--- TARGET LETTERS ---
+
+['d', 'd', 'x', 'x', 'e', 'e', 'x', 'x', 'f', 'f', 'x', 'x', 'g', 'g', 'x', 'x', 'h', 'h', 'x', 'x', 'i', 'i', 'x', 'x', 'j', 'j', 'x', 'x', 'k', 'k', 'x', 'x', 'l', 'l', 'x', 'x']
+Full Qwen output: **Exemplars:**
+
+1. [a a b b c c d d] [a b c d]  
+2. [x x y y z z] [x y z]  
+3. [m m n n o o p p] [m n o p]  
+
+**Final Answer:**  
+[[c d e f g]]
+Filtered Qwen output: c d e f g
+trial 2 of 10...
+trial 3 of 10...
+trial 4 of 10...
+trial 5 of 10...
+trial 6 of 10...
+trial 7 of 10...
+trial 8 of 10...
+trial 9 of 10...
+trial 10 of 10...
+alph_4
+a b c d e f g h i j k l m n o p q r s t u v w x y z
+Problem type: 3gensplit7 - 20/20
+trial 1 of 10...
+
+=== PROMPT ===
+
+Use the following alphabet to guess the missing piece.
+
+a b c d e f g h i j k l m n o p q r s t u v w x y z
+
+Note that the alphabet may be in an unfamiliar order. Complete the pattern using this order.
+
+[t w v u x] [t u v w x]
+[12 0 11 0 8 0 9 0 10 0] [ ? ]
+
+First, describe 3 relevant exemplars that are distinct from this problem. Then give the final answer. Answer with only the examples and the final answer. Put your final answer between double brackets.
+
+
+--- TARGET LETTERS ---
+
+[np.int64(12), '0', np.int64(11), '0', np.int64(10), '0', np.int64(9), '0', np.int64(8), '0']
+Full Qwen output: **Exemplars:**
+
+1. [a b c d e] [f g h i j]  
+2. [z y x w v] [u t s r q]  
+3. [1 2 3 4 5] [6 7 8 9 10]  
+
+**Final Answer:**  
+[[12 0 11 0 8 0 9 0 10 0] [12 0 11 0 8 0 9 0 10 0]]  
+
+[[12 0 11 0 8 0 9 0 10 0]]
+Filtered Qwen output: 12 0 11 0 8 0 9 0 10 0] [12 0 11 0 8 0 9 0 10 0
+trial 2 of 10...
+trial 3 of 10...
+trial 4 of 10...
+trial 5 of 10...
+trial 6 of 10...
+trial 7 of 10...
+trial 8 of 10...
+trial 9 of 10...
+trial 10 of 10...
+alph_5
+a b c d e f g h i j k l m n o p q r s t u v w x y z
+Problem type: 3gensplit7 - 20/20
+trial 1 of 10...
+
+=== PROMPT ===
+
+Use the following alphabet to guess the missing piece.
+
+a b c d e f g h i j k l m n o p q r s t u v w x y z
+
+Note that the alphabet may be in an unfamiliar order. Complete the pattern using this order.
+
+[m n o p] [m n o p q]
+[b x d x f x h x j x l x n x p x] [ ? ]
+
+First, describe 3 relevant exemplars that are distinct from this problem. Then give the final answer. Answer with only the examples and the final answer. Put your final answer between double brackets.
+
+
+--- TARGET LETTERS ---
+
+['b', 'x', 'd', 'x', 'f', 'x', 'h', 'x', 'j', 'x', 'l', 'x', 'n', 'x', 'p', 'x', 'r', 'x']
+Full Qwen output: **Exemplars:**
+
+1. [a b c] [a b c d]  
+2. [x y z] [x y z a]  
+3. [p q r s] [p q r s t]  
+
+**Final Answer:**  
+[[r s t u]]
+Filtered Qwen output: r s t u
+trial 2 of 10...
+trial 3 of 10...
+trial 4 of 10...
+trial 5 of 10...
+trial 6 of 10...
+trial 7 of 10...
+trial 8 of 10...
+trial 9 of 10...
+trial 10 of 10...
+alph_6
+a b c d e f g h i j k l m n o p q r s t u v w x y z
+Problem type: 3gensplit7 - 20/20
+trial 1 of 10...
+
+=== PROMPT ===
+
+Use the following alphabet to guess the missing piece.
+
+a b c d e f g h i j k l m n o p q r s t u v w x y z
+
+Note that the alphabet may be in an unfamiliar order. Complete the pattern using this order.
+
+[m n o p] [m n o q]
+[1 0 2 0 3 0 4 0 5 0 6 0 7 0 8 0] [ ? ]
+
+First, describe 3 relevant exemplars that are distinct from this problem. Then give the final answer. Answer with only the examples and the final answer. Put your final answer between double brackets.
+
+
+--- TARGET LETTERS ---
+
+[np.int64(1), '0', np.int64(2), '0', np.int64(3), '0', np.int64(4), '0', np.int64(5), '0', np.int64(6), '0', np.int64(7), '0', np.int64(9), '0']
+Full Qwen output: **Exemplars:**
+
+1. [a b c] [a b d]  
+2. [x y z] [x y w]  
+3. [1 2 3] [1 2 4]  
+
+**Final Answer:**  
+[[m n o r]]
+Filtered Qwen output: m n o r
+trial 2 of 10...
+trial 3 of 10...
+trial 4 of 10...
+trial 5 of 10...
+trial 6 of 10...
+trial 7 of 10...
+trial 8 of 10...
+trial 9 of 10...
+trial 10 of 10...
+Saved ./Qwen_Qwen3-8B_prob_predictions_multi_alph/gen/Qwen_Qwen3-8B_letterstring_results_1_multi_alph_gptprobs_analogical_extrasplit.npz
