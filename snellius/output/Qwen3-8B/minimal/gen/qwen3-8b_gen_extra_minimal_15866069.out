@@ -1,0 +1,941 @@
+============================================================================================== 
+Warning! Mixing Conda and module environments may lead to corruption of the
+user environment. 
+We do not recommend users mixing those two environments unless absolutely
+necessary. Note that 
+SURF does not provide any support for Conda environment.
+For more information, please refer to our software policy page:
+https://servicedesk.surf.nl/wiki/display/WIKI/Software+policy+Snellius#SoftwarepolicySnellius-UseofAnacondaandMinicondaenvironmentsonSnellius 
+
+Remember that many packages have already been installed on the system and can
+be loaded using 
+the 'module load <package__name>' command. If you are uncertain if a package is
+already available 
+on the system, please use 'module avail' or 'module spider' to search for it.
+============================================================================================== 
+`torch_dtype` is deprecated! Use `dtype` instead!
+Loading model Qwen/Qwen3-8B...
+Loading checkpoint shards:   0%|          | 0/5 [00:00<?, ?it/s]Loading checkpoint shards:  20%|██        | 1/5 [00:05<00:21,  5.30s/it]Loading checkpoint shards:  40%|████      | 2/5 [00:09<00:14,  4.81s/it]Loading checkpoint shards:  60%|██████    | 3/5 [00:14<00:09,  4.62s/it]Loading checkpoint shards:  80%|████████  | 4/5 [00:17<00:04,  4.19s/it]Loading checkpoint shards: 100%|██████████| 5/5 [00:19<00:00,  3.17s/it]Loading checkpoint shards: 100%|██████████| 5/5 [00:19<00:00,  3.81s/it]
+Model loaded. Loading tokenizer...
+Model Qwen/Qwen3-8B and tokenizer loaded.
+Traceback (most recent call last):
+  File "/gpfs/home5/bdenboef/counterfactual-reasoning/letterstring/eval_GPT_letterstring.py", line 76, in <module>
+    all_prob = np.load(f'./problems/{args.gen}/all_prob_{args.num_permuted}_7_gpt_human_alphs.npz', allow_pickle=True)['all_prob']
+               ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/bdenboef/.conda/envs/thesis/lib/python3.14/site-packages/numpy/lib/_npyio_impl.py", line 454, in load
+    fid = stack.enter_context(open(os.fspath(file), "rb"))
+                              ~~~~^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: './problems/gen/all_prob_0_7_gpt_human_alphs.npz'
+srun: error: gcn2: task 0: Exited with exit code 1
+srun: Terminating StepId=15866069.0
+`torch_dtype` is deprecated! Use `dtype` instead!
+Loading model Qwen/Qwen3-8B...
+Loading checkpoint shards:   0%|          | 0/5 [00:00<?, ?it/s]Loading checkpoint shards:  20%|██        | 1/5 [00:01<00:07,  1.85s/it]Loading checkpoint shards:  40%|████      | 2/5 [00:03<00:05,  1.81s/it]Loading checkpoint shards:  60%|██████    | 3/5 [00:05<00:03,  1.78s/it]Loading checkpoint shards:  80%|████████  | 4/5 [00:06<00:01,  1.63s/it]Loading checkpoint shards: 100%|██████████| 5/5 [00:07<00:00,  1.24s/it]Loading checkpoint shards: 100%|██████████| 5/5 [00:07<00:00,  1.46s/it]
+Model loaded. Loading tokenizer...
+Model Qwen/Qwen3-8B and tokenizer loaded.
+alph_0
+a u c d e f g h i j k l m n o p q r s t b v w x y z
+Problem type: 3gensplit7 - 20/20
+trial 1 of 10...
+
+=== PROMPT ===
+
+Use the following alphabet to complete the pattern.
+
+a u c d e f g h i j k l m n o p q r s t b v w x y z
+
+Note that the alphabet may be in an unfamiliar order. Complete the pattern using this order. Answer with only the final answer and nothing else. Put your answer between double brackets.
+
+[a u c d e e] [a u c d e]
+[19 17 15 15 13 11] [
+
+--- TARGET LETTERS ---
+
+[np.int64(19), np.int64(17), np.int64(15), np.int64(13), np.int64(11)]
+The following generation flags are not valid and may be ignored: ['temperature', 'top_k']. Set `TRANSFORMERS_VERBOSITY=info` for more details.
+Full Qwen output: [19 17 15 15 13] [19 17 15 15 13]
+trial 2 of 10...
+trial 3 of 10...
+trial 4 of 10...
+trial 5 of 10...
+trial 6 of 10...
+trial 7 of 10...
+trial 8 of 10...
+trial 9 of 10...
+trial 10 of 10...
+alph_1
+a l c d e f g h i j k b m n o p q r s t u v w x y z
+Problem type: 3gensplit7 - 20/20
+trial 1 of 10...
+
+=== PROMPT ===
+
+Use the following alphabet to complete the pattern.
+
+a l c d e f g h i j k b m n o p q r s t u v w x y z
+
+Note that the alphabet may be in an unfamiliar order. Complete the pattern using this order. Answer with only the final answer and nothing else. Put your answer between double brackets.
+
+[f g h i] [e g h i]
+[2 2 0 0 3 3 0 0 4 4 0 0 5 5 0 0] [
+
+--- TARGET LETTERS ---
+
+[np.int64(1), np.int64(1), '0', '0', np.int64(3), np.int64(3), '0', '0', np.int64(4), np.int64(4), '0', '0', np.int64(5), np.int64(5), '0', '0']
+Full Qwen output: [[f g h i] [e g h i]  
+[2 2 0 0 3 3 0 0 4 4 0 0 5 5 0 0]]
+Filtered Qwen output: f g h i] [e g h i]  
+[2 2 0 0 3 3 0 0 4 4 0 0 5 5 0 0
+trial 2 of 10...
+trial 3 of 10...
+trial 4 of 10...
+trial 5 of 10...
+trial 6 of 10...
+trial 7 of 10...
+trial 8 of 10...
+trial 9 of 10...
+trial 10 of 10...
+alph_2
+a b c d e f g h i j k l m n o p q r w t u v s x y z
+Problem type: 3gensplit7 - 20/20
+trial 1 of 10...
+
+=== PROMPT ===
+
+Use the following alphabet to complete the pattern.
+
+a b c d e f g h i j k l m n o p q r w t u v s x y z
+
+Note that the alphabet may be in an unfamiliar order. Complete the pattern using this order. Answer with only the final answer and nothing else. Put your answer between double brackets.
+
+[j k l m] [i k l m]
+[q q x x w w x x u u x x s s x x] [
+
+--- TARGET LETTERS ---
+
+['o', 'o', 'x', 'x', 'w', 'w', 'x', 'x', 'u', 'u', 'x', 'x', 's', 's', 'x', 'x']
+Full Qwen output: [[r r y y v v y y t t y y p p y y]]
+Filtered Qwen output: r r y y v v y y t t y y p p y y
+trial 2 of 10...
+trial 3 of 10...
+trial 4 of 10...
+trial 5 of 10...
+trial 6 of 10...
+trial 7 of 10...
+trial 8 of 10...
+trial 9 of 10...
+trial 10 of 10...
+alph_3
+a b c d e f g h i j k l m n o p y r s t u v w x q z
+Problem type: 3gensplit7 - 20/20
+trial 1 of 10...
+
+=== PROMPT ===
+
+Use the following alphabet to complete the pattern.
+
+a b c d e f g h i j k l m n o p y r s t u v w x q z
+
+Note that the alphabet may be in an unfamiliar order. Complete the pattern using this order. Answer with only the final answer and nothing else. Put your answer between double brackets.
+
+[o p y r] [n p y r]
+[h h x x i i x x j j x x k k x x l l x x m m x x n n x x o o x x] [
+
+--- TARGET LETTERS ---
+
+['g', 'g', 'x', 'x', 'i', 'i', 'x', 'x', 'j', 'j', 'x', 'x', 'k', 'k', 'x', 'x', 'l', 'l', 'x', 'x', 'm', 'm', 'x', 'x', 'n', 'n', 'x', 'x', 'o', 'o', 'x', 'x']
+Full Qwen output: [[o p y r]] [[n p y r]] [[o p y r]]
+Filtered Qwen output: o p y r
+trial 2 of 10...
+trial 3 of 10...
+trial 4 of 10...
+trial 5 of 10...
+trial 6 of 10...
+trial 7 of 10...
+trial 8 of 10...
+trial 9 of 10...
+trial 10 of 10...
+alph_4
+a b f d e c g h i j k l m n o p q r s t u v w x y z
+Problem type: 3gensplit7 - 20/20
+trial 1 of 10...
+
+=== PROMPT ===
+
+Use the following alphabet to complete the pattern.
+
+a b f d e c g h i j k l m n o p q r s t u v w x y z
+
+Note that the alphabet may be in an unfamiliar order. Complete the pattern using this order. Answer with only the final answer and nothing else. Put your answer between double brackets.
+
+[c g h i] [c g h j]
+[25 0 24 0 23 0 22 0] [
+
+--- TARGET LETTERS ---
+
+[np.int64(25), '0', np.int64(24), '0', np.int64(23), '0', np.int64(21), '0']
+Full Qwen output: [[c g h i j]]
+Filtered Qwen output: c g h i j
+trial 2 of 10...
+trial 3 of 10...
+trial 4 of 10...
+trial 5 of 10...
+trial 6 of 10...
+trial 7 of 10...
+trial 8 of 10...
+trial 9 of 10...
+trial 10 of 10...
+alph_5
+a b c d e l g h i j k f m n o p q r s t u v w x y z
+Problem type: 3gensplit7 - 20/20
+trial 1 of 10...
+
+=== PROMPT ===
+
+Use the following alphabet to complete the pattern.
+
+a b c d e l g h i j k f m n o p q r s t u v w x y z
+
+Note that the alphabet may be in an unfamiliar order. Complete the pattern using this order. Answer with only the final answer and nothing else. Put your answer between double brackets.
+
+[b g d e l] [b c d e l]
+[a x c x e x g x i x s x m x o x q x] [
+
+--- TARGET LETTERS ---
+
+['a', 'x', 'c', 'x', 'e', 'x', 'g', 'x', 'i', 'x', 'k', 'x', 'm', 'x', 'o', 'x', 'q', 'x']
+Full Qwen output: [[b g d e l]] [[b c d e l]] [[a x c x e x g x i x s x m x o x q x]] [[b g d e l]]
+Filtered Qwen output: b g d e l
+trial 2 of 10...
+trial 3 of 10...
+trial 4 of 10...
+trial 5 of 10...
+trial 6 of 10...
+trial 7 of 10...
+trial 8 of 10...
+trial 9 of 10...
+trial 10 of 10...
+alph_6
+a b c d m f g h i j k l e n o p q r s t u v w x y z
+Problem type: 3gensplit7 - 20/20
+trial 1 of 10...
+
+=== PROMPT ===
+
+Use the following alphabet to complete the pattern.
+
+a b c d m f g h i j k l e n o p q r s t u v w x y z
+
+Note that the alphabet may be in an unfamiliar order. Complete the pattern using this order. Answer with only the final answer and nothing else. Put your answer between double brackets.
+
+[d m f f g h] [d m f g h]
+[1 0 2 0 3 0 4 0 5 0 6 0 7 0 8 0 9 0 9 0] [
+
+--- TARGET LETTERS ---
+
+[np.int64(1), '0', np.int64(2), '0', np.int64(3), '0', np.int64(4), '0', np.int64(5), '0', np.int64(6), '0', np.int64(7), '0', np.int64(8), '0', np.int64(9), '0']
+Full Qwen output: [[d m f g h]]
+Filtered Qwen output: d m f g h
+trial 2 of 10...
+trial 3 of 10...
+trial 4 of 10...
+trial 5 of 10...
+trial 6 of 10...
+trial 7 of 10...
+trial 8 of 10...
+trial 9 of 10...
+trial 10 of 10...
+Saved ./Qwen_Qwen3-8B_prob_predictions_multi_alph/gen/Qwen_Qwen3-8B_letterstring_results_2_multi_alph_gptprobs_minimal_extrasplit.npz
+`torch_dtype` is deprecated! Use `dtype` instead!
+Loading model Qwen/Qwen3-8B...
+Loading checkpoint shards:   0%|          | 0/5 [00:00<?, ?it/s]Loading checkpoint shards:  20%|██        | 1/5 [00:01<00:07,  1.84s/it]Loading checkpoint shards:  40%|████      | 2/5 [00:03<00:05,  1.81s/it]Loading checkpoint shards:  60%|██████    | 3/5 [00:05<00:03,  1.78s/it]Loading checkpoint shards:  80%|████████  | 4/5 [00:06<00:01,  1.63s/it]Loading checkpoint shards: 100%|██████████| 5/5 [00:07<00:00,  1.23s/it]Loading checkpoint shards: 100%|██████████| 5/5 [00:07<00:00,  1.46s/it]
+Model loaded. Loading tokenizer...
+Model Qwen/Qwen3-8B and tokenizer loaded.
+alph_0
+a n c d e f g h i j k l m b q p u r s t o v w x y z
+Problem type: 3gensplit7 - 20/20
+trial 1 of 10...
+
+=== PROMPT ===
+
+Use the following alphabet to complete the pattern.
+
+a n c d e f g h i j k l m b q p u r s t o v w x y z
+
+Note that the alphabet may be in an unfamiliar order. Complete the pattern using this order. Answer with only the final answer and nothing else. Put your answer between double brackets.
+
+[m b b q p u] [m b q p u]
+[19 17 17 15 13 11] [
+
+--- TARGET LETTERS ---
+
+[np.int64(19), np.int64(17), np.int64(15), np.int64(13), np.int64(11)]
+The following generation flags are not valid and may be ignored: ['temperature', 'top_k']. Set `TRANSFORMERS_VERBOSITY=info` for more details.
+Full Qwen output: [19 17 17 15 13 11] [19 17 15 13 11]  
+[19 17 17 15 13 11] [19 17 15 13 11]  
+[19 17 17 15 13 11] [19 17 15 13 11]  
+[19 17 17 15 13 11] [19 17 15 13 11]  
+[19 17 17 15 13 11] [19 17 15 13 11]  
+[19 17 17 15 13 11] [19 17 15 13 11]  
+[19 17 17 15 13 11] [19 17 15 13 11]  
+[19
+trial 2 of 10...
+trial 3 of 10...
+trial 4 of 10...
+trial 5 of 10...
+trial 6 of 10...
+trial 7 of 10...
+trial 8 of 10...
+trial 9 of 10...
+trial 10 of 10...
+alph_1
+a b c d o f g h i j k r m n l p q x s t u v w e y z
+Problem type: 3gensplit7 - 20/20
+trial 1 of 10...
+
+=== PROMPT ===
+
+Use the following alphabet to complete the pattern.
+
+a b c d o f g h i j k r m n l p q x s t u v w e y z
+
+Note that the alphabet may be in an unfamiliar order. Complete the pattern using this order. Answer with only the final answer and nothing else. Put your answer between double brackets.
+
+[f g h i] [f g h i j]
+[i i x x j j x x k k x x r r x x m m x x n n x x l l x x p p x x] [
+
+--- TARGET LETTERS ---
+
+['i', 'i', 'x', 'x', 'j', 'j', 'x', 'x', 'k', 'k', 'x', 'x', 'r', 'r', 'x', 'x', 'm', 'm', 'x', 'x', 'n', 'n', 'x', 'x', 'l', 'l', 'x', 'x', 'p', 'p', 'x', 'x', 'q', 'q', 'x', 'x']
+Full Qwen output: [[f g h i j]]
+Filtered Qwen output: f g h i j
+trial 2 of 10...
+trial 3 of 10...
+trial 4 of 10...
+trial 5 of 10...
+trial 6 of 10...
+trial 7 of 10...
+trial 8 of 10...
+trial 9 of 10...
+trial 10 of 10...
+alph_2
+q b c d e f g o i j k l a n h p m r s t u v w x y z
+Problem type: 3gensplit7 - 20/20
+trial 1 of 10...
+
+=== PROMPT ===
+
+Use the following alphabet to complete the pattern.
+
+q b c d e f g o i j k l a n h p m r s t u v w x y z
+
+Note that the alphabet may be in an unfamiliar order. Complete the pattern using this order. Answer with only the final answer and nothing else. Put your answer between double brackets.
+
+[h p m r l] [h p m r s]
+[7 7 22 22 9 9 10 10 11 11 12 12 13 13 14 14 15 15] [
+
+--- TARGET LETTERS ---
+
+[np.int64(7), np.int64(7), np.int64(8), np.int64(8), np.int64(9), np.int64(9), np.int64(10), np.int64(10), np.int64(11), np.int64(11), np.int64(12), np.int64(12), np.int64(13), np.int64(13), np.int64(14), np.int64(14), np.int64(15), np.int64(15)]
+Full Qwen output: [[h p m r s t u v w x y z]]
+Filtered Qwen output: h p m r s t u v w x y z
+trial 2 of 10...
+trial 3 of 10...
+trial 4 of 10...
+trial 5 of 10...
+trial 6 of 10...
+trial 7 of 10...
+trial 8 of 10...
+trial 9 of 10...
+trial 10 of 10...
+alph_3
+a g c d e f q h i j k l m z o p n r s t u v w x y b
+Problem type: 3gensplit7 - 20/20
+trial 1 of 10...
+
+=== PROMPT ===
+
+Use the following alphabet to complete the pattern.
+
+a g c d e f q h i j k l m z o p n r s t u v w x y b
+
+Note that the alphabet may be in an unfamiliar order. Complete the pattern using this order. Answer with only the final answer and nothing else. Put your answer between double brackets.
+
+[r s t u] [n s t u]
+[25 0 24 0 23 0 22 0] [
+
+--- TARGET LETTERS ---
+
+[np.int64(26), '0', np.int64(24), '0', np.int64(23), '0', np.int64(22), '0']
+Full Qwen output: [[25 0 24 0 23 0 22 0]]
+Filtered Qwen output: 25 0 24 0 23 0 22 0
+trial 2 of 10...
+trial 3 of 10...
+trial 4 of 10...
+trial 5 of 10...
+trial 6 of 10...
+trial 7 of 10...
+trial 8 of 10...
+trial 9 of 10...
+trial 10 of 10...
+alph_4
+a b c d f k g h i j r l m n o e q p s t u v w x y z
+Problem type: 3gensplit7 - 20/20
+trial 1 of 10...
+
+=== PROMPT ===
+
+Use the following alphabet to complete the pattern.
+
+a b c d f k g h i j r l m n o e q p s t u v w x y z
+
+Note that the alphabet may be in an unfamiliar order. Complete the pattern using this order. Answer with only the final answer and nothing else. Put your answer between double brackets.
+
+[a b c d] [a b c f]
+[j j l l n n e e p p t t v v x x] [
+
+--- TARGET LETTERS ---
+
+['j', 'j', 'l', 'l', 'n', 'n', 'e', 'e', 'p', 'p', 't', 't', 'v', 'v', 'z', 'z']
+Full Qwen output: [[a b c d e f g h i j k l m n o p q r s t u v w x y z]]
+Filtered Qwen output: a b c d e f g h i j k l m n o p q r s t u v w x y z
+trial 2 of 10...
+trial 3 of 10...
+trial 4 of 10...
+trial 5 of 10...
+trial 6 of 10...
+trial 7 of 10...
+trial 8 of 10...
+trial 9 of 10...
+trial 10 of 10...
+alph_5
+a b c d e f g h k j z l m n o p q r s t u y w x v i
+Problem type: 3gensplit7 - 20/20
+trial 1 of 10...
+
+=== PROMPT ===
+
+Use the following alphabet to complete the pattern.
+
+a b c d e f g h k j z l m n o p q r s t u y w x v i
+
+Note that the alphabet may be in an unfamiliar order. Complete the pattern using this order. Answer with only the final answer and nothing else. Put your answer between double brackets.
+
+[y w x v] [y w x i]
+[p p x x o o x x n n x x m m x x] [
+
+--- TARGET LETTERS ---
+
+['p', 'p', 'x', 'x', 'o', 'o', 'x', 'x', 'n', 'n', 'x', 'x', 'l', 'l', 'x', 'x']
+Full Qwen output: [[y w x v i]]
+Filtered Qwen output: y w x v i
+trial 2 of 10...
+trial 3 of 10...
+trial 4 of 10...
+trial 5 of 10...
+trial 6 of 10...
+trial 7 of 10...
+trial 8 of 10...
+trial 9 of 10...
+trial 10 of 10...
+alph_6
+n b c d e f g h i j r l m a k p q o s t u v w x y z
+Problem type: 3gensplit7 - 20/20
+trial 1 of 10...
+
+=== PROMPT ===
+
+Use the following alphabet to complete the pattern.
+
+n b c d e f g h i j r l m a k p q o s t u v w x y z
+
+Note that the alphabet may be in an unfamiliar order. Complete the pattern using this order. Answer with only the final answer and nothing else. Put your answer between double brackets.
+
+[d e b g h] [d e f g h]
+[9 0 10 0 11 0 12 0 13 0 1 0 15 0 16 0 17 0] [
+
+--- TARGET LETTERS ---
+
+[np.int64(9), '0', np.int64(10), '0', np.int64(11), '0', np.int64(12), '0', np.int64(13), '0', np.int64(14), '0', np.int64(15), '0', np.int64(16), '0', np.int64(17), '0']
+Full Qwen output: [[d e b g h] [d e f g h]]
+Filtered Qwen output: d e b g h] [d e f g h
+trial 2 of 10...
+trial 3 of 10...
+trial 4 of 10...
+trial 5 of 10...
+trial 6 of 10...
+trial 7 of 10...
+trial 8 of 10...
+trial 9 of 10...
+trial 10 of 10...
+Saved ./Qwen_Qwen3-8B_prob_predictions_multi_alph/gen/Qwen_Qwen3-8B_letterstring_results_5_multi_alph_gptprobs_minimal_extrasplit.npz
+`torch_dtype` is deprecated! Use `dtype` instead!
+Loading model Qwen/Qwen3-8B...
+Loading checkpoint shards:   0%|          | 0/5 [00:00<?, ?it/s]Loading checkpoint shards:  20%|██        | 1/5 [00:01<00:07,  1.83s/it]Loading checkpoint shards:  40%|████      | 2/5 [00:03<00:05,  1.80s/it]Loading checkpoint shards:  60%|██████    | 3/5 [00:05<00:03,  1.77s/it]Loading checkpoint shards:  80%|████████  | 4/5 [00:06<00:01,  1.62s/it]Loading checkpoint shards: 100%|██████████| 5/5 [00:07<00:00,  1.22s/it]Loading checkpoint shards: 100%|██████████| 5/5 [00:07<00:00,  1.45s/it]
+Model loaded. Loading tokenizer...
+Model Qwen/Qwen3-8B and tokenizer loaded.
+alph_0
+a q c d e o g h i n k l m u f p y r s t w v b x z j
+Problem type: 3gensplit7 - 20/20
+trial 1 of 10...
+
+=== PROMPT ===
+
+Use the following alphabet to complete the pattern.
+
+a q c d e o g h i n k l m u f p y r s t w v b x z j
+
+Note that the alphabet may be in an unfamiliar order. Complete the pattern using this order. Answer with only the final answer and nothing else. Put your answer between double brackets.
+
+[g h i n n k] [g h i n k]
+[11 9 7 5 3 3] [
+
+--- TARGET LETTERS ---
+
+[np.int64(11), np.int64(9), np.int64(7), np.int64(5), np.int64(3)]
+The following generation flags are not valid and may be ignored: ['temperature', 'top_k']. Set `TRANSFORMERS_VERBOSITY=info` for more details.
+Full Qwen output: [[g h i n k]]
+Filtered Qwen output: g h i n k
+trial 2 of 10...
+trial 3 of 10...
+trial 4 of 10...
+trial 5 of 10...
+trial 6 of 10...
+trial 7 of 10...
+trial 8 of 10...
+trial 9 of 10...
+trial 10 of 10...
+alph_1
+a b c q e f g y i o k l t n x p h r s u d v w m j z
+Problem type: 3gensplit7 - 20/20
+trial 1 of 10...
+
+=== PROMPT ===
+
+Use the following alphabet to complete the pattern.
+
+a b c q e f g y i o k l t n x p h r s u d v w m j z
+
+Note that the alphabet may be in an unfamiliar order. Complete the pattern using this order. Answer with only the final answer and nothing else. Put your answer between double brackets.
+
+[n x p h] [t x p h]
+[23 23 0 0 24 24 0 0 25 25 0 0 26 26 0 0] [
+
+--- TARGET LETTERS ---
+
+[np.int64(22), np.int64(22), '0', '0', np.int64(24), np.int64(24), '0', '0', np.int64(25), np.int64(25), '0', '0', np.int64(26), np.int64(26), '0', '0']
+Full Qwen output: [[n x p h] [t x p h]  
+[23 23 0 0 24 24 0 0 25 25 0 0 26 26 0 0]]
+Filtered Qwen output: n x p h] [t x p h]  
+[23 23 0 0 24 24 0 0 25 25 0 0 26 26 0 0
+trial 2 of 10...
+trial 3 of 10...
+trial 4 of 10...
+trial 5 of 10...
+trial 6 of 10...
+trial 7 of 10...
+trial 8 of 10...
+trial 9 of 10...
+trial 10 of 10...
+alph_2
+c b v h e f g d r j k l m n o p q y s t u x a w i z
+Problem type: 3gensplit7 - 20/20
+trial 1 of 10...
+
+=== PROMPT ===
+
+Use the following alphabet to complete the pattern.
+
+c b v h e f g d r j k l m n o p q y s t u x a w i z
+
+Note that the alphabet may be in an unfamiliar order. Complete the pattern using this order. Answer with only the final answer and nothing else. Put your answer between double brackets.
+
+[b v h e] [c v h e]
+[n n x x p p x x y y x x t t x x] [
+
+--- TARGET LETTERS ---
+
+['l', 'l', 'x', 'x', 'p', 'p', 'x', 'x', 'y', 'y', 'x', 'x', 't', 't', 'x', 'x']
+Full Qwen output: [[b v h e]] [[c v h e]] [[n n x x p p x x y y x x t t x x]] [[n n x x p p x x y y x x t t x x]]
+Filtered Qwen output: b v h e
+trial 2 of 10...
+trial 3 of 10...
+trial 4 of 10...
+trial 5 of 10...
+trial 6 of 10...
+trial 7 of 10...
+trial 8 of 10...
+trial 9 of 10...
+trial 10 of 10...
+alph_3
+a m c p z f g h i b d k j n o l q r s t u v w x e y
+Problem type: 3gensplit7 - 20/20
+trial 1 of 10...
+
+=== PROMPT ===
+
+Use the following alphabet to complete the pattern.
+
+a m c p z f g h i b d k j n o l q r s t u v w x e y
+
+Note that the alphabet may be in an unfamiliar order. Complete the pattern using this order. Answer with only the final answer and nothing else. Put your answer between double brackets.
+
+[s t u v] [r t u v]
+[n n x x o o x x l l x x q q x x r r x x s s x x t t x x u u x x] [
+
+--- TARGET LETTERS ---
+
+['j', 'j', 'x', 'x', 'o', 'o', 'x', 'x', 'l', 'l', 'x', 'x', 'q', 'q', 'x', 'x', 'r', 'r', 'x', 'x', 's', 's', 'x', 'x', 't', 't', 'x', 'x', 'u', 'u', 'x', 'x']
+Full Qwen output: [stuv] [rtuv]  
+[nnxxooolllxxqqxxrrxxssxxttxxuuxx] [
+trial 2 of 10...
+trial 3 of 10...
+trial 4 of 10...
+trial 5 of 10...
+trial 6 of 10...
+trial 7 of 10...
+trial 8 of 10...
+trial 9 of 10...
+trial 10 of 10...
+alph_4
+g b c d e f a q i t k z m l o p h n s j u v w x y r
+Problem type: 3gensplit7 - 20/20
+trial 1 of 10...
+
+=== PROMPT ===
+
+Use the following alphabet to complete the pattern.
+
+g b c d e f a q i t k z m l o p h n s j u v w x y r
+
+Note that the alphabet may be in an unfamiliar order. Complete the pattern using this order. Answer with only the final answer and nothing else. Put your answer between double brackets.
+
+[e f a q] [e f a q i]
+[d d f f q q t t z z l l p p n n] [
+
+--- TARGET LETTERS ---
+
+['d', 'd', 'f', 'f', 'q', 'q', 't', 't', 'z', 'z', 'l', 'l', 'p', 'p', 'n', 'n', 'j', 'j']
+Full Qwen output: [[e f a q i t]]
+Filtered Qwen output: e f a q i t
+trial 2 of 10...
+trial 3 of 10...
+trial 4 of 10...
+trial 5 of 10...
+trial 6 of 10...
+trial 7 of 10...
+trial 8 of 10...
+trial 9 of 10...
+trial 10 of 10...
+alph_5
+e a c d b f g r i j k w m p n h q l s t u v o x y z
+Problem type: 3gensplit7 - 20/20
+trial 1 of 10...
+
+=== PROMPT ===
+
+Use the following alphabet to complete the pattern.
+
+e a c d b f g r i j k w m p n h q l s t u v o x y z
+
+Note that the alphabet may be in an unfamiliar order. Complete the pattern using this order. Answer with only the final answer and nothing else. Put your answer between double brackets.
+
+[p n h q] [m n h q]
+[o o x x v v x x u u x x t t x x] [
+
+--- TARGET LETTERS ---
+
+['x', 'x', 'x', 'x', 'v', 'v', 'x', 'x', 'u', 'u', 'x', 'x', 't', 't', 'x', 'x']
+Full Qwen output: [ p n h q ] [ m n h q ] [ o o x x v v x x u u x x t t x x ] [ o o x x v v x x u u x x t t x x ]
+trial 2 of 10...
+trial 3 of 10...
+trial 4 of 10...
+trial 5 of 10...
+trial 6 of 10...
+trial 7 of 10...
+trial 8 of 10...
+trial 9 of 10...
+trial 10 of 10...
+alph_6
+a b s d e f g o i j k c x n h p q t y r u v w l m z
+Problem type: 3gensplit7 - 20/20
+trial 1 of 10...
+
+=== PROMPT ===
+
+Use the following alphabet to complete the pattern.
+
+a b s d e f g o i j k c x n h p q t y r u v w l m z
+
+Note that the alphabet may be in an unfamiliar order. Complete the pattern using this order. Answer with only the final answer and nothing else. Put your answer between double brackets.
+
+[c x n h s] [c x n h p]
+[4 0 5 0 6 0 16 0 8 0 9 0 10 0 11 0 12 0] [
+
+--- TARGET LETTERS ---
+
+[np.int64(4), '0', np.int64(5), '0', np.int64(6), '0', np.int64(7), '0', np.int64(8), '0', np.int64(9), '0', np.int64(10), '0', np.int64(11), '0', np.int64(12), '0']
+Full Qwen output: [[c x n h s] [c x n h p]]
+Filtered Qwen output: c x n h s] [c x n h p
+trial 2 of 10...
+trial 3 of 10...
+trial 4 of 10...
+trial 5 of 10...
+trial 6 of 10...
+trial 7 of 10...
+trial 8 of 10...
+trial 9 of 10...
+trial 10 of 10...
+Saved ./Qwen_Qwen3-8B_prob_predictions_multi_alph/gen/Qwen_Qwen3-8B_letterstring_results_10_multi_alph_gptprobs_minimal_extrasplit.npz
+`torch_dtype` is deprecated! Use `dtype` instead!
+Loading model Qwen/Qwen3-8B...
+Loading checkpoint shards:   0%|          | 0/5 [00:00<?, ?it/s]Loading checkpoint shards:  20%|██        | 1/5 [00:01<00:07,  1.85s/it]Loading checkpoint shards:  40%|████      | 2/5 [00:03<00:05,  1.82s/it]Loading checkpoint shards:  60%|██████    | 3/5 [00:05<00:03,  1.79s/it]Loading checkpoint shards:  80%|████████  | 4/5 [00:06<00:01,  1.64s/it]Loading checkpoint shards: 100%|██████████| 5/5 [00:07<00:00,  1.24s/it]Loading checkpoint shards: 100%|██████████| 5/5 [00:07<00:00,  1.47s/it]
+Model loaded. Loading tokenizer...
+Model Qwen/Qwen3-8B and tokenizer loaded.
+alph_0
+u n o y q l g f j d k h a z b p e r s t w m c i x v
+Problem type: 3gensplit7 - 20/20
+trial 1 of 10...
+
+=== PROMPT ===
+
+Use the following alphabet to complete the pattern.
+
+u n o y q l g f j d k h a z b p e r s t w m c i x v
+
+Note that the alphabet may be in an unfamiliar order. Complete the pattern using this order. Answer with only the final answer and nothing else. Put your answer between double brackets.
+
+[u n n o y q] [u n o y q]
+[19 17 17 15 13 11] [
+
+--- TARGET LETTERS ---
+
+[np.int64(19), np.int64(17), np.int64(15), np.int64(13), np.int64(11)]
+The following generation flags are not valid and may be ignored: ['temperature', 'top_k']. Set `TRANSFORMERS_VERBOSITY=info` for more details.
+Full Qwen output: [19 17 17 15 13 11] [19 17 15 13 11]  
+[19 17 17 15 13 11] [19 17 15 13 11]  
+[19 17 17 15 13 11] [19 17 15 13 11]  
+[19 17 17 15 13 11] [19 17 15 13 11]  
+[19 17 17 15 13 11] [19 17 15 13 11]  
+[19 17 17 15 13 11] [19 17 15 13 11]  
+[19 17 17 15 13 11] [19 17 15 13 11]  
+[19
+trial 2 of 10...
+trial 3 of 10...
+trial 4 of 10...
+trial 5 of 10...
+trial 6 of 10...
+trial 7 of 10...
+trial 8 of 10...
+trial 9 of 10...
+trial 10 of 10...
+alph_1
+a b g z y w m h i r k d t s j e o f l u v p n x q c
+Problem type: 3gensplit7 - 20/20
+trial 1 of 10...
+
+=== PROMPT ===
+
+Use the following alphabet to complete the pattern.
+
+a b g z y w m h i r k d t s j e o f l u v p n x q c
+
+Note that the alphabet may be in an unfamiliar order. Complete the pattern using this order. Answer with only the final answer and nothing else. Put your answer between double brackets.
+
+[s j e o] [t j e o]
+[23 23 0 0 24 24 0 0 25 25 0 0 26 26 0 0] [
+
+--- TARGET LETTERS ---
+
+[np.int64(22), np.int64(22), '0', '0', np.int64(24), np.int64(24), '0', '0', np.int64(25), np.int64(25), '0', '0', np.int64(26), np.int64(26), '0', '0']
+Full Qwen output: [[s j e o] [t j e o]  
+[23 23 0 0 24 24 0 0 25 25 0 0 26 26 0 0]]
+Filtered Qwen output: s j e o] [t j e o]  
+[23 23 0 0 24 24 0 0 25 25 0 0 26 26 0 0
+trial 2 of 10...
+trial 3 of 10...
+trial 4 of 10...
+trial 5 of 10...
+trial 6 of 10...
+trial 7 of 10...
+trial 8 of 10...
+trial 9 of 10...
+trial 10 of 10...
+alph_2
+b n f m p g h w i q e d l y s o c k a t u v r x j z
+Problem type: 3gensplit7 - 20/20
+trial 1 of 10...
+
+=== PROMPT ===
+
+Use the following alphabet to complete the pattern.
+
+b n f m p g h w i q e d l y s o c k a t u v r x j z
+
+Note that the alphabet may be in an unfamiliar order. Complete the pattern using this order. Answer with only the final answer and nothing else. Put your answer between double brackets.
+
+[r x j z] [v x j z]
+[h h x x i i x x e e x x l l x x] [
+
+--- TARGET LETTERS ---
+
+['p', 'p', 'x', 'x', 'i', 'i', 'x', 'x', 'e', 'e', 'x', 'x', 'l', 'l', 'x', 'x']
+Full Qwen output: [ r x j z ] [ v x j z ] [ h h x x i i x x e e x x l l x x ] [ r x j z ]
+trial 2 of 10...
+trial 3 of 10...
+trial 4 of 10...
+trial 5 of 10...
+trial 6 of 10...
+trial 7 of 10...
+trial 8 of 10...
+trial 9 of 10...
+trial 10 of 10...
+alph_3
+i b s d f z v h t c r l o g e p w j m x u q n y a k
+Problem type: 3gensplit7 - 20/20
+trial 1 of 10...
+
+=== PROMPT ===
+
+Use the following alphabet to complete the pattern.
+
+i b s d f z v h t c r l o g e p w j m x u q n y a k
+
+Note that the alphabet may be in an unfamiliar order. Complete the pattern using this order. Answer with only the final answer and nothing else. Put your answer between double brackets.
+
+[b s d f] [i s d f]
+[v v x x h h x x t t x x c c x x r r x x l l x x o o x x g g x x] [
+
+--- TARGET LETTERS ---
+
+['z', 'z', 'x', 'x', 'h', 'h', 'x', 'x', 't', 't', 'x', 'x', 'c', 'c', 'x', 'x', 'r', 'r', 'x', 'x', 'l', 'l', 'x', 'x', 'o', 'o', 'x', 'x', 'g', 'g', 'x', 'x']
+Full Qwen output: [[v v x x h h x x t t x x c c x x r r x x l l x x o o x x g g x x]]
+Filtered Qwen output: v v x x h h x x t t x x c c x x r r x x l l x x o o x x g g x x
+trial 2 of 10...
+trial 3 of 10...
+trial 4 of 10...
+trial 5 of 10...
+trial 6 of 10...
+trial 7 of 10...
+trial 8 of 10...
+trial 9 of 10...
+trial 10 of 10...
+alph_4
+w p c d e z b h a s j g x o m n t k f i u v q y r l
+Problem type: 3gensplit7 - 20/20
+trial 1 of 10...
+
+=== PROMPT ===
+
+Use the following alphabet to complete the pattern.
+
+w p c d e z b h a s j g x o m n t k f i u v q y r l
+
+Note that the alphabet may be in an unfamiliar order. Complete the pattern using this order. Answer with only the final answer and nothing else. Put your answer between double brackets.
+
+[j g x o] [j g x m]
+[11 0 10 0 9 0 8 0] [
+
+--- TARGET LETTERS ---
+
+[np.int64(11), '0', np.int64(10), '0', np.int64(9), '0', np.int64(7), '0']
+Full Qwen output: [[j g x m]]
+Filtered Qwen output: j g x m
+trial 2 of 10...
+trial 3 of 10...
+trial 4 of 10...
+trial 5 of 10...
+trial 6 of 10...
+trial 7 of 10...
+trial 8 of 10...
+trial 9 of 10...
+trial 10 of 10...
+alph_5
+a r y t e f b n x j s z m p d u q v o g i k h l w c
+Problem type: 3gensplit7 - 20/20
+trial 1 of 10...
+
+=== PROMPT ===
+
+Use the following alphabet to complete the pattern.
+
+a r y t e f b n x j s z m p d u q v o g i k h l w c
+
+Note that the alphabet may be in an unfamiliar order. Complete the pattern using this order. Answer with only the final answer and nothing else. Put your answer between double brackets.
+
+[x j s s z m] [x j s z m]
+[j x z x p x u x v x v x g x k x l x c x] [
+
+--- TARGET LETTERS ---
+
+['j', 'x', 'z', 'x', 'p', 'x', 'u', 'x', 'v', 'x', 'g', 'x', 'k', 'x', 'l', 'x', 'c', 'x']
+Full Qwen output: To solve the pattern, we need to identify the rule governing the sequence. Let's analyze the given pattern:
+
+**First part:** [x j s s z m]  
+**Second part:** [x j s z m]  
+**Third part:** [j x z x p x u x v x v x g x k x l x c x]  
+
+Let's look at the first two parts to find a pattern:
+
+- [x j s s z m]  
+- [x j s z m]  
+
+It appears that the second part is a shortened version of the first part, with the second "s" removed. So the pattern might be that the second part is the first part with one character removed.
+
+Now, let's look at the third part:  
+[j x z x p x u x v x v x g x k x l x c x]  
+
+This seems to be a longer sequence. Let's check if it follows the same pattern as the first two parts. If we remove one character from the third part, we might get the second part. Let's try removing the second "x" (the 4th character):
+
+Original third part:  
+[j x z x p x u x v x v x g x k
+trial 2 of 10...
+trial 3 of 10...
+trial 4 of 10...
+trial 5 of 10...
+trial 6 of 10...
+trial 7 of 10...
+trial 8 of 10...
+trial 9 of 10...
+trial 10 of 10...
+alph_6
+x p j h n a u d i q k c m t f s b r g y e v w z l o
+Problem type: 3gensplit7 - 20/20
+trial 1 of 10...
+
+=== PROMPT ===
+
+Use the following alphabet to complete the pattern.
+
+x p j h n a u d i q k c m t f s b r g y e v w z l o
+
+Note that the alphabet may be in an unfamiliar order. Complete the pattern using this order. Answer with only the final answer and nothing else. Put your answer between double brackets.
+
+[k c m t] [k c m f]
+[9 11 13 15 17 19 21 23] [
+
+--- TARGET LETTERS ---
+
+[np.int64(9), np.int64(11), np.int64(13), np.int64(15), np.int64(17), np.int64(19), np.int64(21), np.int64(25)]
+Full Qwen output: [[k c m f]]
+Filtered Qwen output: k c m f
+trial 2 of 10...
+trial 3 of 10...
+trial 4 of 10...
+trial 5 of 10...
+trial 6 of 10...
+trial 7 of 10...
+trial 8 of 10...
+trial 9 of 10...
+trial 10 of 10...
+Saved ./Qwen_Qwen3-8B_prob_predictions_multi_alph/gen/Qwen_Qwen3-8B_letterstring_results_20_multi_alph_gptprobs_minimal_extrasplit.npz
+`torch_dtype` is deprecated! Use `dtype` instead!
+Loading model Qwen/Qwen3-8B...
+Loading checkpoint shards:   0%|          | 0/5 [00:00<?, ?it/s]Loading checkpoint shards:  20%|██        | 1/5 [00:01<00:07,  1.85s/it]Loading checkpoint shards:  40%|████      | 2/5 [00:03<00:05,  1.82s/it]Loading checkpoint shards:  60%|██████    | 3/5 [00:05<00:03,  1.80s/it]Loading checkpoint shards:  80%|████████  | 4/5 [00:07<00:01,  1.94s/it]Loading checkpoint shards: 100%|██████████| 5/5 [00:08<00:00,  1.43s/it]Loading checkpoint shards: 100%|██████████| 5/5 [00:08<00:00,  1.62s/it]
+Model loaded. Loading tokenizer...
+Model Qwen/Qwen3-8B and tokenizer loaded.
+symb_0
+> $ ) * @ = & < + !
+symb_1
+& > $ ! + ) < @ = *
+Saved ./Qwen_Qwen3-8B_prob_predictions_multi_alph/gen/Qwen_Qwen3-8B_letterstring_results_symb_multi_alph_gptprobs_minimal_extrasplit.npz
