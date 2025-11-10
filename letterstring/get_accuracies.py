@@ -4,7 +4,7 @@ import pandas as pd
 import sys
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--prompt', help='analogical, hw, etc')
+parser.add_argument('--promptstyle', help='analogical, hw, etc')
 parser.add_argument('--problem', help='Give a problem: succ, pred')
 parser.add_argument('--num_permuted', help="give a number of letters in the alphabet to permute from 2 to 26")
 parser.add_argument('--model', help='give model: gpt3, gpt35, gpt4, Qwen_Qwen3-8B')

@@ -111,7 +111,8 @@ for alph in all_prob.item().keys(): # use all_prob.item().keys() for all alphabe
 		# accidently left out 3gensplit7, test separately
 		elif args.extra_split and prob_types[p] != '3gensplit7':
 			continue
-		print('problem type ' + str(p+1) + ' of ' + str(N_prob_types) + '...', flush=True)
+		print(f"Problem type: {prob_types[p]} - {str(p+1)}/{str(N_prob_types)}", flush=True)
+		# print('problem type ' + str(p+1) + ' of ' + str(N_prob_types) + '... ', flush=True)
 		prob_type_responses = []
 		prob_type_targets = []
 		for t in range(N_trials_per_prob_type):
