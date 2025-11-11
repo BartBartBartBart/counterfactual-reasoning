@@ -59,16 +59,34 @@ elif args.gpt == '4':
 # Load Qwen3  
 elif args.model is not None:
 	print(f"Loading model {args.model}...")
-	MAX_NEW_TOKENS = 256
-	model = AutoModelForCausalLM.from_pretrained(
-		args.model,
-		torch_dtype=torch.bfloat16 if torch.cuda.is_available() else torch.float32,
-		device_map="auto",
-		trust_remote_code=True,
-	)
+	MAX_NEW_TOKENS = 50  # Reduced from 256 - letterstring answers are short
+	
+	# Try to use Flash Attention 2 for faster inference
+	try:
+		model = AutoModelForCausalLM.from_pretrained(
+			args.model,
+			torch_dtype=torch.bfloat16 if torch.cuda.is_available() else torch.float32,
+			device_map="auto",
+			trust_remote_code=True,
+			attn_implementation="flash_attention_2",  # Use Flash Attention if available
+		)
+		print("Model loaded with Flash Attention 2", flush=True)
+	except Exception as e:
+		print(f"Flash Attention 2 not available ({e}), using default attention", flush=True)
+		model = AutoModelForCausalLM.from_pretrained(
+			args.model,
+			torch_dtype=torch.bfloat16 if torch.cuda.is_available() else torch.float32,
+			device_map="auto",
+			trust_remote_code=True,
+		)
+		print("Model loaded with default attention", flush=True)
 	print("Model loaded. Loading tokenizer...", flush=True)
 	tokenizer = AutoTokenizer.from_pretrained(args.model, trust_remote_code=True, use_fast=False)
 	print(f"Model {args.model} and tokenizer loaded.", flush=True)
+	
+	# Set model to eval mode and disable gradients for inference
+	model.eval()
+	torch.set_grad_enabled(False)
 
 
 # Load all problems
@@ -230,7 +248,8 @@ for alph in all_prob.item().keys(): # use all_prob.item().keys() for all alphabe
 					except:
 						print('trying again...')
 						time.sleep(5)
-				elif args.model == "Qwen/Qwen3-8B":
+				elif args.model.startswith("Qwen"):
+				# elif args.model == "Qwen/Qwen3-8B":
 					# Tokenize
 					text = tokenizer.apply_chat_template(
 						messages,
@@ -241,15 +260,18 @@ for alph in all_prob.item().keys(): # use all_prob.item().keys() for all alphabe
 					inputs = tokenizer([text], return_tensors="pt").to(model.device)
 					pad_id = tokenizer.eos_token_id if tokenizer.pad_token_id is None else tokenizer.pad_token_id
 					# Generate
-					gen = model.generate(
-						**inputs,
-						max_new_tokens=MAX_NEW_TOKENS,
-						do_sample=False,
-						temperature=0.0,
-						top_p=1.0,
-						eos_token_id=tokenizer.eos_token_id,
-						pad_token_id=pad_id,
-					)
+					with torch.inference_mode():  # Faster than torch.no_grad()
+						gen = model.generate(
+							**inputs,
+							max_new_tokens=MAX_NEW_TOKENS,
+							do_sample=False,
+							temperature=0.0,
+							top_p=1.0,
+							eos_token_id=tokenizer.eos_token_id,
+							pad_token_id=pad_id,
+							use_cache=True,  # Enable KV caching for faster generation
+							num_beams=1,  # Greedy decoding (faster than beam search)
+						)
 					out = tokenizer.batch_decode(gen[:, inputs["input_ids"].shape[1]:], skip_special_tokens=True)[0]
 					clean_out = clean_text(out)
 					if args.verbose or t == 0:
@@ -272,7 +294,8 @@ for alph in all_prob.item().keys(): # use all_prob.item().keys() for all alphabe
 
 			if args.gpt =='3':
 				prob_type_responses.append(response['choices'][0]['text'])
-			elif args.model == "Qwen/Qwen3-8B":
+			# elif args.model == "Qwen/Qwen3-8B":
+			elif args.model.startswith("Qwen"):
 				prob_type_responses.append(response[0])
 			else:
 				prob_type_responses.append(response['choices'][0]['message']['content'])
