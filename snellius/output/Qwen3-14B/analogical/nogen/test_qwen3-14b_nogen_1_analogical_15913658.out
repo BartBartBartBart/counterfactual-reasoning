@@ -1,0 +1,61 @@
+============================================================================================== 
+Warning! Mixing Conda and module environments may lead to corruption of the
+user environment. 
+We do not recommend users mixing those two environments unless absolutely
+necessary. Note that 
+SURF does not provide any support for Conda environment.
+For more information, please refer to our software policy page:
+https://servicedesk.surf.nl/wiki/display/WIKI/Software+policy+Snellius#SoftwarepolicySnellius-UseofAnacondaandMinicondaenvironmentsonSnellius 
+
+Remember that many packages have already been installed on the system and can
+be loaded using 
+the 'module load <package__name>' command. If you are uncertain if a package is
+already available 
+on the system, please use 'module avail' or 'module spider' to search for it.
+============================================================================================== 
+`torch_dtype` is deprecated! Use `dtype` instead!
+Loading model Qwen/Qwen3-14B...
+Flash Attention 2 not available (FlashAttention2 has been toggled on, but it cannot be used due to the following error: the package flash_attn seems to be not installed. Please refer to the documentation of https://huggingface.co/docs/transformers/perf_infer_gpu_one#flashattention-2 to install Flash Attention 2.), using default attention
+Loading checkpoint shards:   0%|          | 0/8 [00:00<?, ?it/s]Loading checkpoint shards:  12%|█▎        | 1/8 [00:04<00:30,  4.39s/it]Loading checkpoint shards:  25%|██▌       | 2/8 [00:08<00:26,  4.44s/it]Loading checkpoint shards:  38%|███▊      | 3/8 [00:13<00:22,  4.45s/it]Loading checkpoint shards:  50%|█████     | 4/8 [00:17<00:17,  4.46s/it]Loading checkpoint shards:  62%|██████▎   | 5/8 [00:18<00:09,  3.01s/it]Loading checkpoint shards: 100%|██████████| 8/8 [00:18<00:00,  2.28s/it]
+Some parameters are on the meta device because they were offloaded to the cpu.
+Model loaded with default attention
+Model loaded. Loading tokenizer...
+Model Qwen/Qwen3-14B and tokenizer loaded.
+alph_0
+a b c d e f g h i j k l m n o p q r s t u v w x y z
+Problem type: succ - 1/7
+trial 1 of 10...
+
+=== PROMPT ===
+
+Use the following alphabet to guess the missing piece.
+
+a b c d e f g h i j k l m n o p q r s t u v w x y z
+
+Note that the alphabet may be in an unfamiliar order. Complete the pattern using this order.
+
+[e f g h] [e f g i]
+[f g h i] [ ? ]
+
+First, describe 3 relevant exemplars that are distinct from this problem. Then give the final answer. Answer with only the examples and the final answer. Put your final answer between double brackets.
+
+
+--- TARGET LETTERS ---
+
+['f', 'g', 'h', 'j']
+The following generation flags are not valid and may be ignored: ['temperature', 'top_k']. Set `TRANSFORMERS_VERBOSITY=info` for more details.
+Full Qwen output: Examples:  
+1. [a b c d] [a b c e]  
+2. [x y z a] [x y z b]  
+3. [m n o p] [m n o q]  
+
+Final answer
+trial 2 of 10...
+trial 3 of 10...
+trial 4 of 10...
+trial 5 of 10...
+trial 6 of 10...
+trial 7 of 10...
+[2025-11-11T13:58:44.131] error: *** STEP 15913658.0 ON gcn2 CANCELLED AT 2025-11-11T13:58:44 DUE TO TIME LIMIT ***
+[2025-11-11T13:58:44.131] error: *** JOB 15913658 ON gcn2 CANCELLED AT 2025-11-11T13:58:44 DUE TO TIME LIMIT ***
+srun: Job step aborted: Waiting up to 32 seconds for job step to finish.
