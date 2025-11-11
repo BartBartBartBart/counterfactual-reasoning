@@ -26,6 +26,7 @@ parser.add_argument('--gen', help='give gen for generalized problems or nogen fo
 parser.add_argument('--hf_token', help='Huggingface token for model loading', default=None)
 parser.add_argument('--verbose', action='store_true', help="Print verbose output.")
 parser.add_argument('--extra-split', action='store_true', help="Test only 3gensplit7")
+parser.add_argument('--use-8bit', action='store_true', help="Use 8-bit quantization to save memory (may be slower)")
 
 args = parser.parse_args()
 
@@ -61,25 +62,51 @@ elif args.model is not None:
 	print(f"Loading model {args.model}...")
 	MAX_NEW_TOKENS = 50  # Reduced from 256 - letterstring answers are short
 	
+	# Check available GPU memory
+	if torch.cuda.is_available():
+		gpu_memory = torch.cuda.get_device_properties(0).total_memory / (1024**3)
+		print(f"GPU memory available: {gpu_memory:.2f} GB", flush=True)
+		# Clear any cached memory
+		torch.cuda.empty_cache()
+	
+	# Prepare loading kwargs
+	load_kwargs = {
+		"torch_dtype": torch.bfloat16 if torch.cuda.is_available() else torch.float32,
+		"trust_remote_code": True,
+		"low_cpu_mem_usage": True,
+	}
+	
+	# Use 8-bit quantization if requested (saves memory but may be slower)
+	if args.use_8bit:
+		from transformers import BitsAndBytesConfig
+		load_kwargs["quantization_config"] = BitsAndBytesConfig(load_in_8bit=True)
+		load_kwargs["device_map"] = "auto"
+		print("Using 8-bit quantization", flush=True)
+	else:
+		# Force all on GPU 0 - no CPU offloading
+		load_kwargs["device_map"] = "cuda:0"
+	
 	# Try to use Flash Attention 2 for faster inference
 	try:
 		model = AutoModelForCausalLM.from_pretrained(
 			args.model,
-			torch_dtype=torch.bfloat16 if torch.cuda.is_available() else torch.float32,
-			device_map="auto",
-			trust_remote_code=True,
-			attn_implementation="flash_attention_2",  # Use Flash Attention if available
+			attn_implementation="flash_attention_2",
+			**load_kwargs
 		)
 		print("Model loaded with Flash Attention 2", flush=True)
 	except Exception as e:
 		print(f"Flash Attention 2 not available ({e}), using default attention", flush=True)
 		model = AutoModelForCausalLM.from_pretrained(
 			args.model,
-			torch_dtype=torch.bfloat16 if torch.cuda.is_available() else torch.float32,
-			device_map="auto",
-			trust_remote_code=True,
+			**load_kwargs
 		)
 		print("Model loaded with default attention", flush=True)
+	
+	print(f"Model device: {next(model.parameters()).device}", flush=True)
+	if torch.cuda.is_available():
+		allocated = torch.cuda.memory_allocated(0) / (1024**3)
+		reserved = torch.cuda.memory_reserved(0) / (1024**3)
+		print(f"GPU memory allocated: {allocated:.2f} GB, reserved: {reserved:.2f} GB", flush=True)
 	print("Model loaded. Loading tokenizer...", flush=True)
 	tokenizer = AutoTokenizer.from_pretrained(args.model, trust_remote_code=True, use_fast=False)
 	print(f"Model {args.model} and tokenizer loaded.", flush=True)
@@ -284,6 +311,11 @@ for alph in all_prob.item().keys(): # use all_prob.item().keys() for all alphabe
 						if args.verbose or t == 0:
 							print(f"Filtered Qwen output: {clean_out}", flush=True)
 					response.append(clean_out)
+					
+					# Clean up GPU memory after generation
+					del inputs, gen
+					if torch.cuda.is_available():
+						torch.cuda.empty_cache()
 					# print("Filtered response:", clean_out)
 				else:
 					try:
