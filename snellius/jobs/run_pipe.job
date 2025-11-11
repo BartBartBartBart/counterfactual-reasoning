@@ -5,8 +5,8 @@
 #SBATCH --job-name=run-pipe
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=9
-#SBATCH --time=02:00:00
-#SBATCH --output=../output/Qwen3-14B/analogical/nogen/qwen3-14b_nogen_1_analogical_%A.out
+#SBATCH --time=00:10:00
+#SBATCH --output=../output/Qwen3-14B/analogical/nogen/test_qwen3-14b_nogen_1_analogical_%A.out
 
 module purge
 module load 2025
