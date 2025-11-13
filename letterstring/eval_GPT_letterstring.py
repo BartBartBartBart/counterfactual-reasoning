@@ -5,9 +5,11 @@ import argparse
 import os
 import time
 import sys
-import torch 
+import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from huggingface_hub import login
+
+start = time.time()
 
 def check_path(path):
 	if not os.path.exists(path):
@@ -60,8 +62,8 @@ elif args.gpt == '4':
 # Load Qwen3  
 elif args.model is not None:
 	print(f"Loading model {args.model}...")
-	MAX_NEW_TOKENS = 50  # Reduced from 256 - letterstring answers are short
-	
+	MAX_NEW_TOKENS = 128  # Reduced from 256 - letterstring answers are short
+
 	# Check available GPU memory
 	if torch.cuda.is_available():
 		gpu_memory = torch.cuda.get_device_properties(0).total_memory / (1024**3)
@@ -226,7 +228,7 @@ for alph in all_prob.item().keys(): # use all_prob.item().keys() for all alphabe
 				else:
 					prompt += '] [ ? ]'
 				if args.promptstyle == "analogical":
-					prompt += '\n\nFirst, describe 3 relevant exemplars that are distinct from this problem. Then give the final answer. Answer with only the examples and the final answer. Put your final answer between double brackets.\n'
+					prompt += '\n\nFirst, describe 3 relevant exemplars that are distinct from this problem. Then give the final answer. Answer with only the examples and the final answer with no further explanation. Put your final answer between double brackets.\n'
 			if args.promptstyle == "human":
 				messages = [{'role': 'system', 'content':'You are able to solve letter-string analogies'},
 								{'role': 'user', 'content': "In this study, you will be presented with a series of patterns involving alphanumeric characters, together with an example alphabet.\n\n" +
@@ -369,4 +371,5 @@ save_fname += '.npz'
 np.savez(save_fname, data=response_dict, allow_pickle=True)
 print(f"Saved {save_fname}")
 
-
+end = time.time()
+print(f"Total time: {end-start} seconds.", flush=True)

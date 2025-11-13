@@ -1,12 +1,12 @@
 #!/bin/bash
 
-#SBATCH --partition=gpu_mig
+#SBATCH --partition=gpu_a100
 #SBATCH --gpus=1
 #SBATCH --job-name=run-pipe
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=9
-#SBATCH --time=00:10:00
-#SBATCH --output=../output/Qwen3-14B/analogical/nogen/test_qwen3-14b_nogen_1_analogical_%A.out
+#SBATCH --time=01:40:00
+#SBATCH --output=../output/Qwen3-14B/analogical/nogen/qwen3-14b_nogen_2_5_10_20_symb_analogical_%A.out
 
 module purge
 module load 2025
@@ -41,9 +41,9 @@ cd $HOME/counterfactual-reasoning/letterstring
 #srun python eval_GPT_letterstring.py --gen nogen --model "Qwen/Qwen3-14B" --num_permuted symb --promptstyle minimal
 
 # qwen3-14b - nogen - analogical
-srun python eval_GPT_letterstring.py --gen nogen --model "Qwen/Qwen3-14B" --num_permuted 1 --promptstyle analogical
-#srun python eval_GPT_letterstring.py --gen nogen --model "Qwen/Qwen3-14B" --num_permuted 2 --promptstyle analogical
-#srun python eval_GPT_letterstring.py --gen nogen --model "Qwen/Qwen3-14B" --num_permuted 5 --promptstyle analogical
-#srun python eval_GPT_letterstring.py --gen nogen --model "Qwen/Qwen3-14B" --num_permuted 10 --promptstyle analogical
-#srun python eval_GPT_letterstring.py --gen nogen --model "Qwen/Qwen3-14B" --num_permuted 20 --promptstyle analogical
-#srun python eval_GPT_letterstring.py --gen nogen --model "Qwen/Qwen3-14B" --num_permuted symb --promptstyle analogical
+#srun python eval_GPT_letterstring.py --gen nogen --model "Qwen/Qwen3-14B" --num_permuted 1 --promptstyle analogical
+srun python eval_GPT_letterstring.py --gen nogen --model "Qwen/Qwen3-14B" --num_permuted 2 --promptstyle analogical
+srun python eval_GPT_letterstring.py --gen nogen --model "Qwen/Qwen3-14B" --num_permuted 5 --promptstyle analogical
+srun python eval_GPT_letterstring.py --gen nogen --model "Qwen/Qwen3-14B" --num_permuted 10 --promptstyle analogical
+srun python eval_GPT_letterstring.py --gen nogen --model "Qwen/Qwen3-14B" --num_permuted 20 --promptstyle analogical
+srun python eval_GPT_letterstring.py --gen nogen --model "Qwen/Qwen3-14B" --num_permuted symb --promptstyle analogical
