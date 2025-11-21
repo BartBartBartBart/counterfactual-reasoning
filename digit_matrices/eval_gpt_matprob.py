@@ -3,12 +3,14 @@ import numpy as np
 import builtins
 import os
 from openai import AzureOpenAI
+from transformers import AutoModelForCausalLM, AutoTokenizer
+import torch
 import sys
 import argparse
 import time
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--id", help="The gpt version, can be 0613, 1106 or 0125 or 350613")
+parser.add_argument("--id", help="The gpt version, can be 0613, 1106 or 0125 or 350613 or Qwen3-8B or Qwen3-14B")
 parser.add_argument("--user_prompt_num", help="user prompt", type=int)
 parser.add_argument("--sys_prompt_num", help="sys prompt", type=int)
 parser.add_argument("--prob_format", help="use webb data")
@@ -19,8 +21,6 @@ if args.prob_format not in ['digits', 'symb', 'coords']:
 	print('prob_format must be one of digits, symb, or coords')
 
 id = args.id
-
-
 
 if args.prob_format=='digits':
 	prob_format = '_digits'
@@ -44,20 +44,83 @@ elif args.sys_prompt_num == 1:
 versions = {'0125':{'resource_name':'0125-Preview', 'deployment_name':'0125-Preview'},
             '1106':{'resource_name':'MMResearch', 'deployment_name':'gpt-4-1106-Preview'},
             '0613':{'resource_name':'0613', 'deployment_name':'0613'},
-			'350613':{'resource_name':'0613', 'deployment_name':'0613'}}
+			'350613':{'resource_name':'0613', 'deployment_name':'0613'},
+			'Qwen3-8B': {},
+			'Qwen3-14B': {}}
 
 if id not in versions.keys():
-	print(f'id should be 0125, 1106, or 0613 or 350613')
+	print(f'id should be 0125, 1106, or 0613 or 350613 or Qwen3-8B or Qwen3-14B')
 
-client = AzureOpenAI(
-  azure_endpoint = os.getenv(f"AZURE_OPENAI_ENDPOINT_{id}"), 
-  api_key=os.getenv(f"AZURE_OPENAI_API_KEY_{id}"),  
-  api_version="2024-02-01"
-)
+if not id.startswith("Qwen"):
+	client = AzureOpenAI(
+		azure_endpoint = os.getenv(f"AZURE_OPENAI_ENDPOINT_{id}"), 
+		api_key=os.getenv(f"AZURE_OPENAI_API_KEY_{id}"),  
+		api_version="2024-02-01"
+	)
+elif id.startswith("Qwen"):
+	print(f"Loading model {args.model}...")
+	MAX_NEW_TOKENS = 128 
+
+	# Check available GPU memory
+	if torch.cuda.is_available():
+		gpu_memory = torch.cuda.get_device_properties(0).total_memory / (1024**3)
+		print(f"GPU memory available: {gpu_memory:.2f} GB", flush=True)
+		# Clear any cached memory
+		torch.cuda.empty_cache()
+	
+	# Prepare loading kwargs
+	load_kwargs = {
+		"torch_dtype": torch.bfloat16 if torch.cuda.is_available() else torch.float32,
+		"trust_remote_code": True,
+		"low_cpu_mem_usage": True,
+	}
+	
+	# Try to use Flash Attention 2 for faster inference
+	try:
+		model = AutoModelForCausalLM.from_pretrained(
+			args.model,
+			attn_implementation="flash_attention_2",
+			**load_kwargs
+		)
+		print("Model loaded with Flash Attention 2", flush=True)
+	except Exception as e:
+		print(f"Flash Attention 2 not available ({e}), using default attention", flush=True)
+		model = AutoModelForCausalLM.from_pretrained(
+			args.model,
+			**load_kwargs
+		)
+		print("Model loaded with default attention", flush=True)
+	
+	print(f"Model device: {next(model.parameters()).device}", flush=True)
+	if torch.cuda.is_available():
+		allocated = torch.cuda.memory_allocated(0) / (1024**3)
+		reserved = torch.cuda.memory_reserved(0) / (1024**3)
+		print(f"GPU memory allocated: {allocated:.2f} GB, reserved: {reserved:.2f} GB", flush=True)
+	print("Model loaded. Loading tokenizer...", flush=True)
+	tokenizer = AutoTokenizer.from_pretrained(args.model, trust_remote_code=True, use_fast=False)
+	print(f"Model {args.model} and tokenizer loaded.", flush=True)
+	
+	# Set model to eval mode and disable gradients for inference
+	model.eval()
+	torch.set_grad_enabled(False)
 
 # Split word into characters
 def split(word):
     return [char for char in word]
+
+# Helper function to return the generated response of the model in a clean format
+def clean_text(text: str) -> str:
+    if not text:
+        return text
+    text = text.strip()
+    if text.startswith("```") and text.endswith("```"):
+        text = text.strip("`").strip()
+    if len(text) >= 2 and (
+        (text[0] == '"' and text[-1] == '"')
+        or (text[0] == "“" and text[-1] == "”")
+    ):
+        text = text[1:-1].strip()
+    return text
 
 # Load all problems
 if args.prob_format == 'digits':
@@ -136,8 +199,14 @@ for prob_ind in range(N_prob):
 				prompt = "Try to complete the pattern below. Give ONLY the answer as briefly as possible.\n"
 			elif args.user_prompt_num == 3:
 				prompt = "Try to fill the gap in the pattern below. Give ONLY the answer as briefly as possible.\n"
+			# analogical
+			elif args.user_prompt_num == 4:
+				prompt = "Try to fill the gap in the pattern below. First describe 3 relevant exemplars that are distinct from this problem. Then give the final answer. Answer with only the final answer with no further explanation. Put your final answer between double brackets.\n"
+				# prompt += '\n\nFirst, describe 3 relevant exemplars that are distinct from this problem. 
+				# Then give the final answer. Answer with only the examples and the final answer 
+				# with no further explanation. Put your final answer between double brackets.\n'
 			else:
-				print('You must choose prompt 1, 2, or 3')
+				print('You must choose prompt 1, 2, 3, 4')
 				sys.exit()
 			for r in range(size_prob):
 				for c in range(size_prob):
@@ -178,21 +247,66 @@ for prob_ind in range(N_prob):
 			print(prompt)
 			# sys.exit()
 			# Get response
-			response = client.chat.completions.create(
-				model= versions[id]['deployment_name'],
-				messages=[
-					{"role": "system", "content": sys_content},
-					{"role": "user", "content": prompt},
-					],
-				**kwargs
-			)
+			messages = [{"role": "system", "content": sys_content},
+						{"role": "user", "content": prompt}]
+			
+			if not id.startswith("Qwen"):
+				response = client.chat.completions.create(
+					model= versions[id]['deployment_name'],
+					messages=[
+						{"role": "system", "content": sys_content},
+						{"role": "user", "content": prompt},
+						],
+					**kwargs
+				)
 
-			response_text = response.choices[0].message.content
+				response_text = response.choices[0].message.content
+			elif id.startswith("Qwen"):
+				# Tokenize
+				text = tokenizer.apply_chat_template(
+					messages,
+					tokenize=False,
+					add_generation_prompt=True,
+					enable_thinking=False,
+				)
+				inputs = tokenizer([text], return_tensors="pt").to(model.device)
+				pad_id = tokenizer.eos_token_id if tokenizer.pad_token_id is None else tokenizer.pad_token_id
+				# Generate
+				with torch.inference_mode():  # Faster than torch.no_grad()
+					gen = model.generate(
+						**inputs,
+						max_new_tokens=MAX_NEW_TOKENS,
+						do_sample=False,
+						temperature=0.0,
+						top_p=1.0,
+						eos_token_id=tokenizer.eos_token_id,
+						pad_token_id=pad_id,
+						use_cche=True,  # Enable KV caching for faster generation
+						num_beams=1,  # Greedy decoding (faster than beam search)
+					)
+				out = tokenizer.batch_decode(gen[:, inputs["input_ids"].shape[1]:], skip_special_tokens=True)[0]
+				clean_out = clean_text(out)
+				if args.verbose or t == 0:
+					print(f"Full Qwen output: {clean_out}", flush=True)
+				# Filter the answer, take only the content inside double brackets [[ answer ]]
+				if '[[' in clean_out and ']]' in clean_out:
+					start_idx = clean_out.index('[[') + 2
+					end_idx = clean_out.index(']]')
+					clean_out = clean_out[start_idx:end_idx].strip()
+					if args.verbose or t == 0:
+						print(f"Filtered Qwen output: {clean_out}", flush=True)
+				response_text = clean_out
+				
+				# Clean up GPU memory after generation
+				del inputs, gen
+				if torch.cuda.is_available():
+					torch.cuda.empty_cache()
+
 			if response_text is None:
 				response_text = 'None'
 				none_count+=1
 				print(f'Nonecount is {none_count}')
-			# print(response_text)
+			print(response_text)
 			# sys.exit()
 			# Find portion of response corresponding to prediction
 			prediction = response_text.lstrip('[')
