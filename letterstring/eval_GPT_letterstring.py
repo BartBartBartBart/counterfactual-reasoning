@@ -261,8 +261,8 @@ for alph in all_prob.item().keys(): # use all_prob.item().keys() for all alphabe
 					comp_prompt += '\n' + m['content']
 				comp_prompt=comp_prompt.strip('\n')
 				# print(comp_prompt)
-			elif args.model == "Qwen/Qwen3-8B":
-				messages = [{'role': 'user', 'content': prompt}]
+			# elif args.model == "Qwen/Qwen3-8B":
+			# 	messages = [{'role': 'user', 'content': prompt}]
 				# print(messages)
 				
 			else:
