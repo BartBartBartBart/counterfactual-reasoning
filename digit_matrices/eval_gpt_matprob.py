@@ -45,8 +45,8 @@ versions = {'0125':{'resource_name':'0125-Preview', 'deployment_name':'0125-Prev
             '1106':{'resource_name':'MMResearch', 'deployment_name':'gpt-4-1106-Preview'},
             '0613':{'resource_name':'0613', 'deployment_name':'0613'},
 			'350613':{'resource_name':'0613', 'deployment_name':'0613'},
-			'Qwen3-8B': {},
-			'Qwen3-14B': {}}
+			'Qwen/Qwen3-8B': {},
+			'Qwen/Qwen3-14B': {}}
 
 if id not in versions.keys():
 	print(f'id should be 0125, 1106, or 0613 or 350613 or Qwen3-8B or Qwen3-14B')
@@ -58,7 +58,7 @@ if not id.startswith("Qwen"):
 		api_version="2024-02-01"
 	)
 elif id.startswith("Qwen"):
-	print(f"Loading model {args.model}...")
+	print(f"Loading model {id}...")
 	MAX_NEW_TOKENS = 128 
 
 	# Check available GPU memory
@@ -73,12 +73,13 @@ elif id.startswith("Qwen"):
 		"torch_dtype": torch.bfloat16 if torch.cuda.is_available() else torch.float32,
 		"trust_remote_code": True,
 		"low_cpu_mem_usage": True,
+		"device_map": "auto" if torch.cuda.is_available() else "cpu",
 	}
 	
 	# Try to use Flash Attention 2 for faster inference
 	try:
 		model = AutoModelForCausalLM.from_pretrained(
-			args.model,
+			id,
 			attn_implementation="flash_attention_2",
 			**load_kwargs
 		)
@@ -86,7 +87,7 @@ elif id.startswith("Qwen"):
 	except Exception as e:
 		print(f"Flash Attention 2 not available ({e}), using default attention", flush=True)
 		model = AutoModelForCausalLM.from_pretrained(
-			args.model,
+			id,
 			**load_kwargs
 		)
 		print("Model loaded with default attention", flush=True)
@@ -97,8 +98,8 @@ elif id.startswith("Qwen"):
 		reserved = torch.cuda.memory_reserved(0) / (1024**3)
 		print(f"GPU memory allocated: {allocated:.2f} GB, reserved: {reserved:.2f} GB", flush=True)
 	print("Model loaded. Loading tokenizer...", flush=True)
-	tokenizer = AutoTokenizer.from_pretrained(args.model, trust_remote_code=True, use_fast=False)
-	print(f"Model {args.model} and tokenizer loaded.", flush=True)
+	tokenizer = AutoTokenizer.from_pretrained(id, trust_remote_code=True, use_fast=False)
+	print(f"Model {id} and tokenizer loaded.", flush=True)
 	
 	# Set model to eval mode and disable gradients for inference
 	model.eval()
@@ -281,20 +282,20 @@ for prob_ind in range(N_prob):
 						top_p=1.0,
 						eos_token_id=tokenizer.eos_token_id,
 						pad_token_id=pad_id,
-						use_cche=True,  # Enable KV caching for faster generation
-						num_beams=1,  # Greedy decoding (faster than beam search)
+						# use_cche=True,  # Enable KV caching for faster generation
+						# num_beams=1,  # Greedy decoding (faster than beam search)
 					)
 				out = tokenizer.batch_decode(gen[:, inputs["input_ids"].shape[1]:], skip_special_tokens=True)[0]
 				clean_out = clean_text(out)
-				if args.verbose or t == 0:
-					print(f"Full Qwen output: {clean_out}", flush=True)
+				# if args.verbose or t == 0:
+				print(f"Full Qwen output: {clean_out}", flush=True)
 				# Filter the answer, take only the content inside double brackets [[ answer ]]
 				if '[[' in clean_out and ']]' in clean_out:
 					start_idx = clean_out.index('[[') + 2
 					end_idx = clean_out.index(']]')
 					clean_out = clean_out[start_idx:end_idx].strip()
-					if args.verbose or t == 0:
-						print(f"Filtered Qwen output: {clean_out}", flush=True)
+					# if args.verbose or t == 0:
+					print(f"Filtered Qwen output: {clean_out}", flush=True)
 				response_text = clean_out
 				
 				# Clean up GPU memory after generation
@@ -339,6 +340,8 @@ for prob_ind in range(N_prob):
 			all_gen_correct_pred[prob_type].append(correct_pred)
 
 			# Save data
+			if id.startswith("Qwen"):
+				id = id.replace('/', '_')
 			eval_fname = f'./results/gpt_matprob_results_{args.prob_format}_{id}_prompt_{args.sys_prompt_num}_{args.user_prompt_num}{prob_format}.npz'
 			np.savez(eval_fname, 
 				all_gen_pred=all_gen_pred, all_gen_correct_pred=all_gen_correct_pred, all_MC_pred=all_MC_pred, all_MC_correct_pred=all_MC_correct_pred, all_alt_MC_correct_pred=all_alt_MC_correct_pred, 
