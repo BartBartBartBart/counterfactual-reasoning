@@ -29,7 +29,7 @@ parser.add_argument('--hf_token', help='Huggingface token for model loading', de
 parser.add_argument('--verbose', action='store_true', help="Print verbose output.")
 parser.add_argument('--extra-split', action='store_true', help="Test only 3gensplit7")
 parser.add_argument('--use-8bit', action='store_true', help="Use 8-bit quantization to save memory (may be slower)")
-
+parser.add_argument('--debug', action='store_true', help="Debug mode - do not load large models")
 args = parser.parse_args()
 
 # Helper function to return the generated response of the model in a clean format
@@ -60,7 +60,7 @@ elif args.gpt == '4':
     kwargs = { "model":"gpt-4", "temperature":0, "max_tokens":40, "stop":"\n"}
 	
 # Load Qwen3  
-elif args.model is not None:
+elif args.model is not None and not args.debug:
 	print(f"Loading model {args.model}...")
 	MAX_NEW_TOKENS = 128  # Reduced from 256 - letterstring answers are short
 
@@ -172,7 +172,7 @@ for alph in all_prob.item().keys(): # use all_prob.item().keys() for all alphabe
 			# Create prompt
 			prompt=''
 			if not args.noprompt:
-				if args.promptstyle not in ["minimal", "hw", "webb","webbplus"]:			
+				if args.promptstyle not in ["minimal", "hw", "webb","webbplus", "analogical"]:			
 					prompt+='Use the following alphabet to guess the missing piece.\n\n' \
 						+ alph_string \
 						+ '\n\nNote that the alphabet may be in an unfamiliar order. Complete the pattern using this order.\n\n'
@@ -188,8 +188,10 @@ for alph in all_prob.item().keys(): # use all_prob.item().keys() for all alphabe
 					prompt += "Let's try to complete the pattern:\n\n"
 				elif args.promptstyle == "webbplus":
 					prompt += "Let's try to complete the pattern. Just give the letters that complete the pattern and nothing else at all. Do not describe the pattern.\n\n"
-				# elif args.promptstyle == "analogical":
-				# 	prompt += "Use the following alphabet to complete the pattern.\n\n"
+				elif args.promptstyle == "analogical":
+					prompt += "Use the following alphabet to complete the pattern.\n\n"
+					prompt += alph_string \
+						+ '\n\nFirst, describe 3 relevant exemplars that are distinct from this problem, then give the final answer. Answer with only the examples and the final answer with no further explanation. Put your final answer between double brackets. Note that the alphabet may be in an unfamiliar order. Complete the pattern using this order.\n\n'
 			if args.sentence:
 				prompt += 'If '
 				for i in range(len(prob[0][0])):
@@ -223,12 +225,12 @@ for alph in all_prob.item().keys(): # use all_prob.item().keys() for all alphabe
 					prompt += str(prob[1][0][i])
 					if i < len(prob[1][0]) - 1:
 						prompt += ' '
-				if args.promptstyle in ["minimal", "hw", "webb","webbplus"]:
+				if args.promptstyle in ["minimal", "hw", "webb","webbplus", "analogical"]:
 					prompt += '] ['
 				else:
 					prompt += '] [ ? ]'
-				if args.promptstyle == "analogical":
-					prompt += '\n\nFirst, describe 3 relevant exemplars that are distinct from this problem. Then give the final answer. Answer with only the examples and the final answer with no further explanation. Put your final answer between double brackets.\n'
+				# if args.promptstyle == "analogical":
+				# 	prompt += '\n\nFirst, describe 3 relevant exemplars that are distinct from this problem. Then give the final answer. Answer with only the examples and the final answer with no further explanation. Put your final answer between double brackets.\n'
 			if args.promptstyle == "human":
 				messages = [{'role': 'system', 'content':'You are able to solve letter-string analogies'},
 								{'role': 'user', 'content': "In this study, you will be presented with a series of patterns involving alphanumeric characters, together with an example alphabet.\n\n" +
@@ -251,7 +253,9 @@ for alph in all_prob.item().keys(): # use all_prob.item().keys() for all alphabe
 	        # If verbose or first trial
 			if args.verbose or t == 0:
 				print("\n=== PROMPT ===\n", flush=True)
-				print(prompt, flush=True)
+				print(f"System message: {messages[0]['content']}\n", flush=True)
+				print(f"User message: {messages[1]['content']}\n", flush=True)
+				# print(prompt, flush=True)
 				print("\n--- TARGET LETTERS ---\n", flush=True)
 				print(current_target, flush=True)
 
