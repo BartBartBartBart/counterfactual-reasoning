@@ -17,13 +17,12 @@ Loading model Qwen/Qwen3-8B...
 GPU memory available: 39.49 GB
 `torch_dtype` is deprecated! Use `dtype` instead!
 Flash Attention 2 not available (FlashAttention2 has been toggled on, but it cannot be used due to the following error: the package flash_attn seems to be not installed. Please refer to the documentation of https://huggingface.co/docs/transformers/perf_infer_gpu_one#flashattention-2 to install Flash Attention 2.), using default attention
-Loading checkpoint shards:   0%|          | 0/5 [00:00<?, ?it/s]Loading checkpoint shards:  20%|██        | 1/5 [00:04<00:17,  4.27s/it]Loading checkpoint shards:  40%|████      | 2/5 [00:08<00:12,  4.30s/it]Loading checkpoint shards:  60%|██████    | 3/5 [00:12<00:08,  4.29s/it]Loading checkpoint shards:  80%|████████  | 4/5 [00:16<00:03,  3.96s/it]Loading checkpoint shards: 100%|██████████| 5/5 [00:17<00:00,  3.02s/it]Loading checkpoint shards: 100%|██████████| 5/5 [00:17<00:00,  3.53s/it]
+Loading checkpoint shards:   0%|          | 0/5 [00:00<?, ?it/s]Loading checkpoint shards:  20%|██        | 1/5 [00:04<00:18,  4.62s/it]Loading checkpoint shards:  40%|████      | 2/5 [00:09<00:13,  4.50s/it]Loading checkpoint shards:  60%|██████    | 3/5 [00:13<00:08,  4.40s/it]Loading checkpoint shards:  80%|████████  | 4/5 [00:16<00:04,  4.03s/it]Loading checkpoint shards: 100%|██████████| 5/5 [00:18<00:00,  3.05s/it]Loading checkpoint shards: 100%|██████████| 5/5 [00:18<00:00,  3.62s/it]
 Model loaded with default attention
 Model device: cuda:0
 GPU memory allocated: 15.26 GB, reserved: 15.28 GB
 Model loaded. Loading tokenizer...
 Model Qwen/Qwen3-8B and tokenizer loaded.
-The following generation flags are not valid and may be ignored: ['temperature', 'top_k']. Set `TRANSFORMERS_VERBOSITY=info` for more details.
 -----------------------------------
 1 of 50...
 Problem type: row_constant...
@@ -32,6 +31,7 @@ Try to complete the pattern below. First describe 3 relevant exemplars that are 
 [6] [6] [6]
 [1] [1] [1]
 [3] [3] [
+The following generation flags are not valid and may be ignored: ['temperature', 'top_k']. Set `TRANSFORMERS_VERBOSITY=info` for more details.
 Full Qwen output: [6] [6] [6]  
 [1] [1] [1]  
 [3] [3] [3]  
@@ -145,10 +145,16 @@ Full Qwen output: [0] [2] [4]
 [4] [5] [6]  
 
 [10] [20] [30]  
-[20] [30] [40]
-Multiple brackets detected. Taking index 35: 40]
-pred set: [4, 0], correct answer: [8], invalid char: False
-Incorrect prediction.
+[20] [30] [40]  
+[30] [40] [50]  
+[40] [50] [60]  
+[50] [60] [70]  
+
+[[8]]
+Filtered Qwen output: [8]
+No brackets detected.
+pred set: [8], correct answer: [8], invalid char: False
+Correct prediction!
 
 
 Problem type: two_rule_comb0...
@@ -182,10 +188,14 @@ Full Qwen output: [1 0] [5 0] [6 0]
 [5 2] [6 2] [1 2]  
 
 [1 0] [5 0] [6 0]  
-[6 4] [1 4] [5 4]
-Multiple brackets detected. Taking index 23: 5 4]
-pred set: [5, 4], correct answer: [1 2], invalid char: False
-Incorrect prediction.
+[6 4] [1 4] [5 4]  
+[5 2] [6 2] [1 2]  
+
+[[1 2]]
+Filtered Qwen output: [1 2]
+No brackets detected.
+pred set: [1, 2], correct answer: [1 2], invalid char: False
+Correct prediction!
 
 
 Problem type: two_rule_comb2...
@@ -203,10 +213,14 @@ Full Qwen output: [5 1] [4 1] [3 1]
 [3 0] [2 0] [1 0]  
 
 [5 1] [4 1] [3 1]  
-[4 8] [3 8] [2 8]
-Multiple brackets detected. Taking index 23: 2 8]
-pred set: [2, 8], correct answer: [1 0], invalid char: False
-Incorrect prediction.
+[4 8] [3 8] [2 8]  
+[3 0] [2 0] [1 0]  
+
+[[1 0]]
+Filtered Qwen output: [1 0]
+No brackets detected.
+pred set: [1, 0], correct answer: [1 0], invalid char: False
+Correct prediction!
 
 
 Problem type: two_rule_comb3...
@@ -275,9 +289,16 @@ Full Qwen output: [5 4 5] [4 3 5] [1 8 5]
 [5 4 9] [4 3 9] [1 8 9]  
 [5 4 10] [4 3 10] [1 8 10]  
 
-[5 4 5] [4 3 5] [
-Multiple brackets detected. Taking index 16: 4 3 5]
-pred set: [4, 3, 5], correct answer: [1 8 8], invalid char: False
+[5 4 5] [4 3 5] [1 8 5]  
+[5 4 6] [4 3 6] [1 8 6]  
+[5 4 7] [4 3 7] [1 8 7]  
+[5 4 8] [4 3 8] [1 8 8]  
+
+[5 4 5] [4 3 5] [1 8 5]  
+[5 4 6] [4 3 6] [1 8 6]  
+[5 4 7] [4 3
+Multiple brackets detected. Taking index 33: 5 4 7]
+pred set: [5, 4, 7], correct answer: [1 8 8], invalid char: False
 Incorrect prediction.
 
 
@@ -424,8 +445,12 @@ Full Qwen output: [2 8 2] [1 10 1] [0 12 0]
 [1 10 1] [0 12 0] [ -1 14 -1 ]  
 [0 12 0] [ -1 14 -1 ] [ -2 16 -2 ]  
 [ -2 16 -2 ] [ -3 18 -3 ] [ -4 20 -4 ]  
-[ -4 20 -4 ] [ -5 22 -5 ] [ -6 2
-Multiple brackets detected. Taking index 13:  -5 22 -5 ]
+[ -4 20 -4 ] [ -5 22 -5 ] [ -6 24 -6 ]  
+[ -6 24 -6 ] [ -7 26 -7 ] [ -8 28 -8 ]  
+[ -8 28 -8 ] [ -9 30 -9 ] [ -10 32 -10 ]  
+[ -10 32 -10 ] [ -11 34 -11 ] [ -12 36 -12 ]  
+[ -12 36 -12 ] [ -13 38 -13 ] [ -14 40 -1
+Multiple brackets detected. Taking index 25:  -13 38 -13 ]
 pred set: [], correct answer: [5 7 3], invalid char: True
 Incorrect prediction.
 
@@ -549,9 +574,14 @@ Full Qwen output: [7 6 5] [7 6 5 1] [1 5 6]
 [7 6 5 1] [7 6 5 1 5] [5 1 6]  
 [7 6 5 1 5] [7 6 5 1 5 6] [5 6 1]  
 [5 6 1] [5 6 1 7] [7 1 6]  
-[5 6 1 7] [5 6 1 7 5]
-Multiple brackets detected. Taking index 13: 5 6 1 7 5]
-pred set: [1 5 5 6 7], correct answer: [5], invalid char: False
+[5 6 1 7] [5 6 1 7 5] [7 5 6]  
+[5 6 1 7 5] [5 6 1 7 5 6] [5 6 7]  
+[5 6 7] [5 6 7 1] [1 7 6]  
+[5 6 7 1] [5 6 7 1 5] [1 5 6]  
+[5 6 7 1 5] [5 6 7 1 5 6] [5 6 1]  
+[5 6
+Multiple brackets detected. Taking index 26: 5 6 1]
+pred set: [1 5 6], correct answer: [5], invalid char: False
 Incorrect prediction.
 
 
@@ -571,9 +601,16 @@ Full Qwen output: [9 0 3 5] [9 5] [3 0]
 
 [9 0 3 5] [9 5] [3 0]  
 [3 5] [5] [3]  
-[0 9] [9]
-Multiple brackets detected. Taking index 25: 9]
-pred set: [9], correct answer: [0], invalid char: False
+[0 9] [9] [0]  
+
+[9 0 3 5] [9 5] [3 0]  
+[3 5] [5] [3]  
+[0 9] [9] [0]  
+
+[[0 3]]
+Filtered Qwen output: [0 3]
+No brackets detected.
+pred set: [0 3], correct answer: [0], invalid char: False
 Incorrect prediction.
 
 
@@ -592,10 +629,14 @@ Full Qwen output: [0 6] [6 8] [0 8]
 [0 8] [8 4] [4 0]  
 
 [0 6] [6 8] [0 8]  
-[8 6] [6 4] [4 8]
-Multiple brackets detected. Taking index 23: 4 8]
-pred set: [4 8], correct answer: [0 4], invalid char: False
-Incorrect prediction.
+[8 6] [6 4] [4 8]  
+[0 8] [8 4] [4 0]  
+
+[[4 0]]
+Filtered Qwen output: [4 0]
+No brackets detected.
+pred set: [0 4], correct answer: [0 4], invalid char: False
+Correct prediction!
 
 
 Problem type: AND_permuted...
@@ -607,5 +648,171 @@ Try to complete the pattern below. First describe 3 relevant exemplars that are 
 Full Qwen output: [2 5] [5 7] [7]  
 [2 1] [7 1] [1]  
 [2] [7] [
-[2025-12-02T10:50:29.411] error: *** JOB 17027828 ON gcn34 CANCELLED AT 2025-12-02T10:50:29 DUE TO TIME LIMIT ***
-[2025-12-02T10:50:29.413] error: *** STEP 17027828.0 ON gcn34 CANCELLED AT 2025-12-02T10:50:29 DUE TO TIME LIMIT ***
+Multiple brackets detected. Taking index 7: 7]
+pred set: [7], correct answer: [], invalid char: False
+Incorrect prediction.
+
+
+-----------------------------------
+2 of 50...
+Problem type: row_constant...
+No brackets detected.
+Problem type: col_constant...
+No brackets detected.
+Problem type: dist3_diag1...
+Multiple brackets detected. Taking index 11: 4]
+Problem type: dist3_diag2...
+No brackets detected.
+Problem type: prog_size1...
+No brackets detected.
+Problem type: prog_size2...
+No brackets detected.
+Problem type: two_rule_comb0...
+No brackets detected.
+Problem type: two_rule_comb1...
+Multiple brackets detected. Taking index 2: 7 9]
+Problem type: two_rule_comb2...
+No brackets detected.
+Problem type: two_rule_comb3...
+No brackets detected.
+Problem type: two_rule_comb4...
+No brackets detected.
+Problem type: two_rule_comb5...
+No brackets detected.
+Problem type: three_rule_comb0...
+No brackets detected.
+Problem type: three_rule_comb1...
+No brackets detected.
+Problem type: three_rule_comb2...
+No brackets detected.
+Problem type: three_rule_comb3...
+No brackets detected.
+Problem type: three_rule_comb4...
+No brackets detected.
+Problem type: three_rule_comb5...
+No brackets detected.
+Problem type: three_rule_comb6...
+No brackets detected.
+Problem type: three_rule_comb7...
+Multiple brackets detected. Taking index 2: 2 3 8]
+Problem type: three_rule_comb8...
+No brackets detected.
+Problem type: three_rule_comb9...
+No brackets detected.
+Problem type: c3_set_union...
+Multiple brackets detected. Taking index 2: 8 9]
+Problem type: c1_set_union...
+No brackets detected.
+Problem type: c2_set_union...
+No brackets detected.
+Problem type: AND...
+Multiple brackets detected. Taking index 2: 1]
+Problem type: XOR...
+No brackets detected.
+Problem type: c3_set_union_permuted...
+Multiple brackets detected. Taking index 2: 4 3 2]
+Problem type: c2_set_union_permuted...
+No brackets detected.
+Problem type: c1_set_union_permuted...
+No brackets detected.
+Problem type: XOR_permuted...
+No brackets detected.
+Problem type: AND_permuted...
+No brackets detected.
+-----------------------------------
+3 of 50...
+Problem type: row_constant...
+No brackets detected.
+Problem type: col_constant...
+No brackets detected.
+Problem type: dist3_diag1...
+No brackets detected.
+Problem type: dist3_diag2...
+Multiple brackets detected. Taking index 2: 1]
+Problem type: prog_size1...
+No brackets detected.
+Problem type: prog_size2...
+No brackets detected.
+Problem type: two_rule_comb0...
+No brackets detected.
+Problem type: two_rule_comb1...
+Multiple brackets detected. Taking index 2: 2 2]
+Problem type: two_rule_comb2...
+Multiple brackets detected. Taking index 43: 5 16]
+Problem type: two_rule_comb3...
+No brackets detected.
+Problem type: two_rule_comb4...
+No brackets detected.
+Problem type: two_rule_comb5...
+No brackets detected.
+Problem type: three_rule_comb0...
+No brackets detected.
+Problem type: three_rule_comb1...
+No brackets detected.
+Problem type: three_rule_comb2...
+No brackets detected.
+Problem type: three_rule_comb3...
+No brackets detected.
+Problem type: three_rule_comb4...
+No brackets detected.
+Problem type: three_rule_comb5...
+No brackets detected.
+Problem type: three_rule_comb6...
+No brackets detected.
+Problem type: three_rule_comb7...
+No brackets detected.
+Problem type: three_rule_comb8...
+No brackets detected.
+Problem type: three_rule_comb9...
+No brackets detected.
+Problem type: c3_set_union...
+No brackets detected.
+Problem type: c1_set_union...
+No brackets detected.
+Problem type: c2_set_union...
+Multiple brackets detected. Taking index 7: 7 2]
+Problem type: AND...
+No brackets detected.
+Problem type: XOR...
+No brackets detected.
+Problem type: c3_set_union_permuted...
+Multiple brackets detected. Taking index 2: 2 5]
+Problem type: c2_set_union_permuted...
+Multiple brackets detected. Taking index 2: 7 9]
+Problem type: c1_set_union_permuted...
+Multiple brackets detected. Taking index 2: 2]
+Problem type: XOR_permuted...
+No brackets detected.
+Problem type: AND_permuted...
+No brackets detected.
+-----------------------------------
+4 of 50...
+Problem type: row_constant...
+Multiple brackets detected. Taking index 11: 3]
+Problem type: col_constant...
+Multiple brackets detected. Taking index 2: 8]
+Problem type: dist3_diag1...
+No brackets detected.
+Problem type: dist3_diag2...
+No brackets detected.
+Problem type: prog_size1...
+No brackets detected.
+Problem type: prog_size2...
+No brackets detected.
+Problem type: two_rule_comb0...
+Multiple brackets detected. Taking index 2: 2 0]
+Problem type: two_rule_comb1...
+Multiple brackets detected. Taking index 2: 3 5]
+Problem type: two_rule_comb2...
+No brackets detected.
+Problem type: two_rule_comb3...
+No brackets detected.
+Problem type: two_rule_comb4...
+No brackets detected.
+Problem type: two_rule_comb5...
+No brackets detected.
+Problem type: three_rule_comb0...
+No brackets detected.
+Problem type: three_rule_comb1...
+[2025-12-02T11:05:21.547] error: *** JOB 17029382 ON gcn71 CANCELLED AT 2025-12-02T11:05:21 DUE to SIGNAL Terminated ***
+[2025-12-02T11:05:21.547] error: *** STEP 17029382.0 ON gcn71 CANCELLED AT 2025-12-02T11:05:21 DUE to SIGNAL Terminated ***
