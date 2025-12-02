@@ -5,8 +5,8 @@
 #SBATCH --job-name=8b-a-digits
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=9
-#SBATCH --time=00:10:00
-#SBATCH --output=../output/matrices/Qwen3-8B/analogical/test_qwen3-8b_digits_analogical_%A.out
+#SBATCH --time=02:00:00
+#SBATCH --output=../output/matrices/Qwen3-8B/analogical/qwen3-8b_digits_analogical_%A.out
 
 module purge
 module load 2025
