@@ -15,7 +15,10 @@ parser.add_argument("--user_prompt_num", help="user prompt", type=int)
 parser.add_argument("--sys_prompt_num", help="sys prompt", type=int)
 parser.add_argument("--prob_format", help="use webb data")
 parser.add_argument("--letters", help="use letters", action="store_true")
+parser.add_argument("--verbose", help="verbose output", action="store_true")
 args = parser.parse_args()
+
+start = time.time()
 
 if args.prob_format not in ['digits', 'symb', 'coords']:
 	print('prob_format must be one of digits, symb, or coords')
@@ -204,15 +207,15 @@ for prob_ind in range(N_prob):
 				prompt = "Try to fill the gap in the pattern below. Give ONLY the answer as briefly as possible.\n"
 			# analogical
 			elif args.user_prompt_num == 4 and args.prob_format == 'symb':
-				prompt = "Try to fill the gap in the pattern below. " # using the following alphabet.\n\n"
+				prompt = "Try to complete the pattern below. " # using the following alphabet.\n\n"
 				# prompt += f"Alphabet: {' '.join(alph)}\n\n"
-				prompt += "First describe 3 relevant exemplars that are distinct from this problem. Then give the final answer for the problem. Answer with only the exemplars and final answer with no further explanation. Put your final answer between double brackets. Answer within 128 tokens.\n\n"
+				prompt += "First describe 3 relevant exemplars that are distinct from this problem, then give the final answer for the problem. Answer with only the exemplars and final answer with no further explanation. Put your final answer between double brackets.\n\n"
 				# prompt += '\n\nFirst, describe 3 relevant exemplars that are distinct from this problem. 
 				# Then give the final answer. Answer with only the examples and the final answer 
 				# with no further explanation. Put your final answer between double brackets.\n'
 			elif args.user_prompt_num == 4 and args.prob_format != 'symb':
-				prompt = "Try to fill the gap in the pattern below. " # using digits from 0 to 9.\n\n"
-				prompt += "First describe 3 relevant exemplars that are distinct from this problem. Then give the final answer for the problem. Answer with ONLY the exemplars and final answer with no further explanation. Put your final answer between double brackets. Answer within 128 tokens.\n\n"
+				prompt = "Try to complete the pattern below. " # using digits from 0 to 9.\n\n"
+				prompt += "First describe 3 relevant exemplars that are distinct from this problem, then give the final answer for the problem. Answer with ONLY the exemplars and final answer with no further explanation. Put your final answer between double brackets.\n\n"
 			else:
 				print('You must choose prompt 1, 2, 3, 4')
 				sys.exit()
@@ -252,7 +255,8 @@ for prob_ind in range(N_prob):
 							prompt += ' '
 						else:
 							prompt += '\n'
-			print(prompt)
+			if args.verbose or prob_ind == 0:
+				print(prompt)
 			# sys.exit()
 			# Get response
 			messages = [{"role": "system", "content": sys_content},
@@ -294,15 +298,15 @@ for prob_ind in range(N_prob):
 					)
 				out = tokenizer.batch_decode(gen[:, inputs["input_ids"].shape[1]:], skip_special_tokens=True)[0]
 				clean_out = clean_text(out)
-				# if args.verbose or t == 0:
-				print(f"Full Qwen output: {clean_out}", flush=True)
+				if args.verbose or prob_ind == 0:
+					print(f"Full Qwen output: {clean_out}", flush=True)
 				# Filter the answer, take only the content inside double brackets [[ answer ]]
 				if '[[' in clean_out and ']]' in clean_out:
 					start_idx = clean_out.index('[[') + 2
 					end_idx = clean_out.index(']]')
 					clean_out = clean_out[start_idx-1:end_idx+1].strip()
-					# if args.verbose or t == 0:
-					print(f"Filtered Qwen output: {clean_out}", flush=True)
+					if args.verbose or prob_ind == 0:
+						print(f"Filtered Qwen output: {clean_out}", flush=True)
 				response_text = clean_out
 				
 				# Clean up GPU memory after generation
@@ -314,8 +318,7 @@ for prob_ind in range(N_prob):
 				response_text = 'None'
 				none_count+=1
 				print(f'Nonecount is {none_count}')
-			# print(response_text)
-			# sys.exit()
+
 			# Find portion of response corresponding to prediction
 
 			# Sometimes it will predict the whole row instead of only the corresponding coordinate
@@ -375,24 +378,31 @@ for prob_ind in range(N_prob):
 			if perm_invariant:
 				correct_answer = np.sort(correct_answer)
 				pred_set = np.sort(pred_set)
-			print(f"pred set: {pred_set}, correct answer: {correct_answer}, invalid char: {invalid_char}")
+			if args.verbose or prob_ind == 0:
+				print(f"pred set: {pred_set}, correct answer: {correct_answer}, invalid char: {invalid_char}")
 			# Determine whether prediction is correct
 			correct_pred = False
 			if not invalid_char and len(pred_set) == len(correct_answer):
 				if np.all(pred_set == correct_answer):
 					correct_pred = True
-			if correct_pred:
-				print('Correct prediction!\n\n')
-			else:
-				print('Incorrect prediction.\n\n')
+			if args.verbose or prob_ind == 0:
+				if correct_pred:
+					print('Correct prediction!\n\n')
+				else:
+					print('Incorrect prediction.\n\n')
 			all_gen_correct_pred[prob_type].append(correct_pred)
 
 			# Save data
 			if id.startswith("Qwen"):
 				id = id.replace('/', '_')
-			eval_fname = f'./results/gpt_matprob_results_{args.prob_format}_{id}_prompt_{args.sys_prompt_num}_{args.user_prompt_num}{prob_format}.npz'
+				user_prompt = "analogical" if args.user_prompt_num == 4 else "minimal"
+				eval_fname = f'./results/{id}/matprob_results_{args.prob_format}_prompt_{args.sys_prompt_num}_{user_prompt}.npz'
+			else:
+				eval_fname = f'./results/gpt_matprob_results_{args.prob_format}_{id}_prompt_{args.sys_prompt_num}_{args.user_prompt_num}{prob_format}.npz'
 			np.savez(eval_fname, 
 				all_gen_pred=all_gen_pred, all_gen_correct_pred=all_gen_correct_pred, all_MC_pred=all_MC_pred, all_MC_correct_pred=all_MC_correct_pred, all_alt_MC_correct_pred=all_alt_MC_correct_pred, 
 				allow_pickle=True)
 			
 print(f'Nonecount is {none_count}')
+end = time.time()
+print(f'Total time: {end - start} seconds')

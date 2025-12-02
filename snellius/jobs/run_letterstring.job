@@ -6,7 +6,7 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=9
 #SBATCH --time=07:00:00
-#SBATCH --output=../output/Qwen3-14B/analogical/gen/qwen3-14b_gen_2_5_10_20_symb_analogical_%A.out
+#SBATCH --output=../output/letterstring/Qwen3-14B/analogical/gen/qwen3-14b_gen_2_5_10_20_symb_analogical_%A.out
 
 module purge
 module load 2025
