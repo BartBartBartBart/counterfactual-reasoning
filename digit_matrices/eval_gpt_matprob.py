@@ -401,7 +401,7 @@ for prob_ind in range(N_prob):
 				user_prompt = "analogical" if args.user_prompt_num == 4 else "minimal"
 				eval_fname = f'./results/{id}/matprob_results_{args.prob_format}_prompt_{args.sys_prompt_num}_{user_prompt}.npz'
 			else:
-				eval_fname = f'./results/gpt_matprob_results_{args.prob_format}_{id}_prompt_{args.sys_prompt_num}_{args.user_prompt_num}{prob_format}.npz'
+				eval_fname = f'./results/gpt_matprob_results_{args.prob_format}_{id}_prompt_{args.sys_prompt_num}_{args.user_prompt_num}.npz'
 			np.savez(eval_fname, 
 				all_gen_pred=all_gen_pred, all_gen_correct_pred=all_gen_correct_pred, all_MC_pred=all_MC_pred, all_MC_correct_pred=all_MC_correct_pred, all_alt_MC_correct_pred=all_alt_MC_correct_pred, 
 				allow_pickle=True)
