@@ -179,7 +179,7 @@ for alph in all_prob.item().keys(): # use all_prob.item().keys() for all alphabe
 				elif args.promptstyle == 'minimal':			
 					prompt+='Use the following alphabet to complete the pattern.\n\n' \
 						+ alph_string \
-						+ '\n\nNote that the alphabet may be in an unfamiliar order. Complete the pattern using this order. Answer with only the final answer between double brackets and nothing else.\n\n'
+						+ '\n\nNote that the alphabet may be in an unfamiliar order. Complete the pattern using this order. Answer with only the final answer and nothing else. Put your final answer between double brackets.\n\n'
 				elif args.promptstyle == 'hw':			
 					prompt+='Use this fictional alphabet: \n\n' \
 						+ alph_string \
