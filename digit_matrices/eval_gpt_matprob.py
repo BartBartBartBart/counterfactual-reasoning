@@ -181,7 +181,8 @@ for prob_ind in range(N_prob):
 	for p in range(len(all_prob_types)):
 		# Problem type
 		prob_type = all_prob_types[p]
-		print('Problem type: ' + prob_type + '...', flush=True)
+		if args.verbose or prob_ind == 0:
+			print('Problem type: ' + prob_type + '...', flush=True)
 		perm_invariant = all_prob['all_problems'].item()[prob_type]['perm_invariant']
 		prob_type_N_prob = len(all_prob['all_problems'].item()[prob_type]['prob']) #changed this from shape[0]
 		if prob_ind < prob_type_N_prob and len(all_gen_correct_pred[prob_type]) <= prob_ind:
@@ -353,10 +354,12 @@ for prob_ind in range(N_prob):
 						last_opening = 0
 					prediction = response_text[last_opening:last_closing+1]
 				prediction = prediction.lstrip('[')
-				print(f"Multiple brackets detected. Taking index {coord_index}: {prediction}", flush=True)
+				if args.verbose or prob_ind == 0:
+					print(f"Multiple brackets detected. Taking index {coord_index}: {prediction}", flush=True)
 			else: 
 				prediction = response_text.lstrip('[')
-				print(f"No brackets detected.", flush=True)
+				if args.verbose or prob_ind == 0:
+					print(f"No brackets detected.", flush=True)
 
 			all_gen_pred[prob_type].append(prediction)
 			# Get prediction set
