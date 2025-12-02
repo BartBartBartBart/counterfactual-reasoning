@@ -6,7 +6,7 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=9
 #SBATCH --time=00:10:00
-#SBATCH --output=../output/matrices/Qwen3-8B/analogical/qwen3-8b_digits_analogical_%A.out
+#SBATCH --output=../output/matrices/Qwen3-8B/analogical/test_qwen3-8b_digits_analogical_%A.out
 
 module purge
 module load 2025
@@ -18,20 +18,20 @@ cd $HOME/counterfactual-reasoning/digit_matrices
 
 # Analogical - 8B
 srun python eval_gpt_matprob.py --id Qwen/Qwen3-8B --user_prompt_num 4 --sys_prompt_num 1 --prob_format digits
-srun python eval_gpt_matprob.py --id Qwen/Qwen3-8B --user_prompt_num 4 --sys_prompt_num 1 --prob_format coords
-srun python eval_gpt_matprob.py --id Qwen/Qwen3-8B --user_prompt_num 4 --sys_prompt_num 1 --prob_format symb
+#srun python eval_gpt_matprob.py --id Qwen/Qwen3-8B --user_prompt_num 4 --sys_prompt_num 1 --prob_format coords
+#srun python eval_gpt_matprob.py --id Qwen/Qwen3-8B --user_prompt_num 4 --sys_prompt_num 1 --prob_format symb
 
 # Analogical - 14B
-srun python eval_gpt_matprob.py --id Qwen/Qwen3-14B --user_prompt_num 4 --sys_prompt_num 1 --prob_format digits
-srun python eval_gpt_matprob.py --id Qwen/Qwen3-14B --user_prompt_num 4 --sys_prompt_num 1 --prob_format coords
-srun python eval_gpt_matprob.py --id Qwen/Qwen3-14B --user_prompt_num 4 --sys_prompt_num 1 --prob_format symb
+#srun python eval_gpt_matprob.py --id Qwen/Qwen3-14B --user_prompt_num 4 --sys_prompt_num 1 --prob_format digits
+#srun python eval_gpt_matprob.py --id Qwen/Qwen3-14B --user_prompt_num 4 --sys_prompt_num 1 --prob_format coords
+#srun python eval_gpt_matprob.py --id Qwen/Qwen3-14B --user_prompt_num 4 --sys_prompt_num 1 --prob_format symb
 
 # Minimal - 8B
-srun python eval_gpt_matprob.py --id Qwen/Qwen3-8B --user_prompt_num 2 --sys_prompt_num 1 --prob_format digits
-srun python eval_gpt_matprob.py --id Qwen/Qwen3-8B --user_prompt_num 2 --sys_prompt_num 1 --prob_format coords
-srun python eval_gpt_matprob.py --id Qwen/Qwen3-8B --user_prompt_num 2 --sys_prompt_num 1 --prob_format symb
+#srun python eval_gpt_matprob.py --id Qwen/Qwen3-8B --user_prompt_num 2 --sys_prompt_num 1 --prob_format digits
+#srun python eval_gpt_matprob.py --id Qwen/Qwen3-8B --user_prompt_num 2 --sys_prompt_num 1 --prob_format coords
+#srun python eval_gpt_matprob.py --id Qwen/Qwen3-8B --user_prompt_num 2 --sys_prompt_num 1 --prob_format symb
 
 # Minimal - 14B
-srun python eval_gpt_matprob.py --id Qwen/Qwen3-14B --user_prompt_num 2 --sys_prompt_num 1 --prob_format digits
-srun python eval_gpt_matprob.py --id Qwen/Qwen3-14B --user_prompt_num 2 --sys_prompt_num 1 --prob_format coords
-srun python eval_gpt_matprob.py --id Qwen/Qwen3-14B --user_prompt_num 2 --sys_prompt_num 1 --prob_format symb
+#srun python eval_gpt_matprob.py --id Qwen/Qwen3-14B --user_prompt_num 2 --sys_prompt_num 1 --prob_format digits
+#srun python eval_gpt_matprob.py --id Qwen/Qwen3-14B --user_prompt_num 2 --sys_prompt_num 1 --prob_format coords
+#srun python eval_gpt_matprob.py --id Qwen/Qwen3-14B --user_prompt_num 2 --sys_prompt_num 1 --prob_format symb
