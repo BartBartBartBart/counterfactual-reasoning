@@ -63,7 +63,7 @@ if not id.startswith("Qwen"):
 	)
 elif id.startswith("Qwen"):
 	print(f"Loading model {id}...")
-	MAX_NEW_TOKENS = 128 
+	MAX_NEW_TOKENS = 256 
 
 	# Check available GPU memory
 	if torch.cuda.is_available():
@@ -175,13 +175,13 @@ for p in range(len(all_prob_types)):
 N_prob = 50
 none_count = 0
 for prob_ind in range(N_prob):
-	print('-----------------------------------')
-	print(str(prob_ind + 1) + ' of ' + str(N_prob) + '...')
+	print('-----------------------------------', flush=True)
+	print(str(prob_ind + 1) + ' of ' + str(N_prob) + '...', flush=True)
 	# Loop over all problem types
 	for p in range(len(all_prob_types)):
 		# Problem type
 		prob_type = all_prob_types[p]
-		print('Problem type: ' + prob_type + '...')
+		print('Problem type: ' + prob_type + '...', flush=True)
 		perm_invariant = all_prob['all_problems'].item()[prob_type]['perm_invariant']
 		prob_type_N_prob = len(all_prob['all_problems'].item()[prob_type]['prob']) #changed this from shape[0]
 		if prob_ind < prob_type_N_prob and len(all_gen_correct_pred[prob_type]) <= prob_ind:
@@ -256,7 +256,7 @@ for prob_ind in range(N_prob):
 						else:
 							prompt += '\n'
 			if args.verbose or prob_ind == 0:
-				print(prompt)
+				print(prompt, flush=True)
 			# sys.exit()
 			# Get response
 			messages = [{"role": "system", "content": sys_content},
@@ -353,10 +353,10 @@ for prob_ind in range(N_prob):
 						last_opening = 0
 					prediction = response_text[last_opening:last_closing+1]
 				prediction = prediction.lstrip('[')
-				print(f"Multiple brackets detected. Taking index {coord_index}: {prediction}")
+				print(f"Multiple brackets detected. Taking index {coord_index}: {prediction}", flush=True)
 			else: 
 				prediction = response_text.lstrip('[')
-				print(f"No brackets detected.")
+				print(f"No brackets detected.", flush=True)
 
 			all_gen_pred[prob_type].append(prediction)
 			# Get prediction set
@@ -379,7 +379,7 @@ for prob_ind in range(N_prob):
 				correct_answer = np.sort(correct_answer)
 				pred_set = np.sort(pred_set)
 			if args.verbose or prob_ind == 0:
-				print(f"pred set: {pred_set}, correct answer: {correct_answer}, invalid char: {invalid_char}")
+				print(f"pred set: {pred_set}, correct answer: {correct_answer}, invalid char: {invalid_char}", flush=True)
 			# Determine whether prediction is correct
 			correct_pred = False
 			if not invalid_char and len(pred_set) == len(correct_answer):
@@ -387,9 +387,9 @@ for prob_ind in range(N_prob):
 					correct_pred = True
 			if args.verbose or prob_ind == 0:
 				if correct_pred:
-					print('Correct prediction!\n\n')
+					print('Correct prediction!\n\n', flush=True)
 				else:
-					print('Incorrect prediction.\n\n')
+					print('Incorrect prediction.\n\n', flush=True)
 			all_gen_correct_pred[prob_type].append(correct_pred)
 
 			# Save data
@@ -403,6 +403,6 @@ for prob_ind in range(N_prob):
 				all_gen_pred=all_gen_pred, all_gen_correct_pred=all_gen_correct_pred, all_MC_pred=all_MC_pred, all_MC_correct_pred=all_MC_correct_pred, all_alt_MC_correct_pred=all_alt_MC_correct_pred, 
 				allow_pickle=True)
 			
-print(f'Nonecount is {none_count}')
+print(f'Nonecount is {none_count}', flush=True)
 end = time.time()
-print(f'Total time: {end - start} seconds')
+print(f'Total time: {end - start} seconds', flush=True)
