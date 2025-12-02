@@ -10,18 +10,18 @@ parser.add_argument('--verbose', action='store_true', help='Enable verbose outpu
 args = parser.parse_args()
 
 if args.model.startswith('Qwen'):
-    user_prompt = "analogical" if args.user_prompt == 4 else "minimal"
+    user_prompt = "analogical" if args.user_prompt == "4" else "minimal"
     path = f'./results/{args.model}'
     fname = f'{path}/matprob_results_{args.prob_format}_prompt_{args.sys_prompt}_{user_prompt}.npz'
 else:
     path = f'./results'
     fname = f'{path}/gpt_matprob_results_{args.prob_format}_{args.model}_prompt_{args.sys_prompt}_{args.user_prompt}.npz'
 
-fname = './results/gpt_matprob_results_digits_Qwen_Qwen3-8B_prompt_1_4_digits.npz'
+# fname = './results/gpt_matprob_results_digits_Qwen_Qwen3-8B_prompt_1_4_digits.npz'
 
 data = np.load(fname, allow_pickle=True)
-
 all_gen_correct_pred = data['all_gen_correct_pred'].item()
+
 acc_dict = {} # keys are problem types, values are accuracies
 for prob_type in all_gen_correct_pred.keys():
     correct_preds = all_gen_correct_pred[prob_type]
@@ -39,4 +39,5 @@ for prob_type in all_gen_correct_pred.keys():
     total_correct += sum(correct_preds)
     total_count += len(correct_preds)
 overall_accuracy = total_correct / total_count if total_count > 0 else 0.0
+print("------------------------")
 print(f"Overall accuracy: {overall_accuracy:.4f}")
