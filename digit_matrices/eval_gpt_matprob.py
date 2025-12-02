@@ -31,6 +31,7 @@ elif args.prob_format=='coords':
 elif args.prob_format=='symb':
 	prob_format = '_symb'
 	checkset =set(['%', '&', '*', '!', '(', '<', '~', '>', ':', '$']) #changed ? to (
+	alph = ['%', '&', '*', '!', '(', '<', '~', '>', ':', '$']
 else:
 	print('prob_format must be one of digits, symb, or coords')
 	sys.exit()
@@ -129,7 +130,7 @@ if args.prob_format == 'digits':
 elif args.prob_format == 'coords':
 	all_prob = np.load('./problems/all_problems_coords.npz', allow_pickle=True)
 else:
-	all_prob = np.load('./problems/all_problems_symb.npz', allow_pickle=True)
+	all_prob = np.load('./problems/all_problems_symbols.npz', allow_pickle=True)
 
 # GPT settings
 kwargs = {"temperature":0, "max_tokens":10, "stop":"\n", }
@@ -171,6 +172,7 @@ for p in range(len(all_prob_types)):
 N_prob = 50
 none_count = 0
 for prob_ind in range(N_prob):
+	print('-----------------------------------')
 	print(str(prob_ind + 1) + ' of ' + str(N_prob) + '...')
 	# Loop over all problem types
 	for p in range(len(all_prob_types)):
@@ -201,11 +203,16 @@ for prob_ind in range(N_prob):
 			elif args.user_prompt_num == 3:
 				prompt = "Try to fill the gap in the pattern below. Give ONLY the answer as briefly as possible.\n"
 			# analogical
-			elif args.user_prompt_num == 4:
-				prompt = "Try to fill the gap in the pattern below. First describe 3 relevant exemplars that are distinct from this problem. Then give the final answer. Answer with only the final answer with no further explanation. Put your final answer between double brackets.\n"
+			elif args.user_prompt_num == 4 and args.prob_format == 'symb':
+				prompt = "Try to fill the gap in the pattern below. " # using the following alphabet.\n\n"
+				# prompt += f"Alphabet: {' '.join(alph)}\n\n"
+				prompt += "First describe 3 relevant exemplars that are distinct from this problem. Then give the final answer for the problem. Answer with only the exemplars and final answer with no further explanation. Put your final answer between double brackets. Answer within 128 tokens.\n\n"
 				# prompt += '\n\nFirst, describe 3 relevant exemplars that are distinct from this problem. 
 				# Then give the final answer. Answer with only the examples and the final answer 
 				# with no further explanation. Put your final answer between double brackets.\n'
+			elif args.user_prompt_num == 4 and args.prob_format != 'symb':
+				prompt = "Try to fill the gap in the pattern below. " # using digits from 0 to 9.\n\n"
+				prompt += "First describe 3 relevant exemplars that are distinct from this problem. Then give the final answer for the problem. Answer with ONLY the exemplars and final answer with no further explanation. Put your final answer between double brackets. Answer within 128 tokens.\n\n"
 			else:
 				print('You must choose prompt 1, 2, 3, 4')
 				sys.exit()
@@ -293,7 +300,7 @@ for prob_ind in range(N_prob):
 				if '[[' in clean_out and ']]' in clean_out:
 					start_idx = clean_out.index('[[') + 2
 					end_idx = clean_out.index(']]')
-					clean_out = clean_out[start_idx:end_idx].strip()
+					clean_out = clean_out[start_idx-1:end_idx+1].strip()
 					# if args.verbose or t == 0:
 					print(f"Filtered Qwen output: {clean_out}", flush=True)
 				response_text = clean_out
@@ -307,10 +314,46 @@ for prob_ind in range(N_prob):
 				response_text = 'None'
 				none_count+=1
 				print(f'Nonecount is {none_count}')
-			print(response_text)
+			# print(response_text)
 			# sys.exit()
 			# Find portion of response corresponding to prediction
-			prediction = response_text.lstrip('[')
+
+			# Sometimes it will predict the whole row instead of only the corresponding coordinate
+			# If structure is 'a] [b] [c' take the corresponding coordinate
+			# If structure is just 'a' take that
+			if response_text.count(']') > 1:
+				opening_brackets = []
+				closing_brackets = []
+				for i, char in enumerate(response_text):
+					if char == '[':
+						opening_brackets.append(i)
+					elif char == ']':
+						closing_brackets.append(i)
+				# Find the index of the bracket corresponding to the coordinate
+				if args.prob_format != 'coords':
+					# if it is not coords then it is always the last bracket
+					coord_index = len(closing_brackets) - 1
+				else:
+					coord_index = cy
+				if coord_index < len(closing_brackets):
+					closing_idx = closing_brackets[coord_index]
+					# Find the opening bracket before this closing bracket
+					start_idx = response_text.rfind('[', 0, closing_idx)
+					if start_idx == -1:
+						start_idx = 0
+					prediction = response_text[start_idx:closing_idx+1]
+				else:
+					# If index is out of range, take the last set of brackets
+					last_closing = response_text.rfind(']')
+					last_opening = response_text.rfind('[', 0, last_closing)
+					if last_opening == -1:
+						last_opening = 0
+					prediction = response_text[last_opening:last_closing+1]
+				prediction = prediction.lstrip('[')
+				print(f"Multiple brackets detected. Taking index {coord_index}: {prediction}")
+			else: 
+				prediction = response_text.lstrip('[')
+				print(f"No brackets detected.")
 
 			all_gen_pred[prob_type].append(prediction)
 			# Get prediction set
@@ -320,7 +363,7 @@ for prob_ind in range(N_prob):
 			for p in split(prediction):
 				if p != ' ':
 					if args.prob_format != 'symb' and p.isdigit():
-							p = int(p)
+						p = int(p)
 					if p in checkset:
 						pred_set.append(p)
 					elif p == ']':
@@ -332,11 +375,16 @@ for prob_ind in range(N_prob):
 			if perm_invariant:
 				correct_answer = np.sort(correct_answer)
 				pred_set = np.sort(pred_set)
+			print(f"pred set: {pred_set}, correct answer: {correct_answer}, invalid char: {invalid_char}")
 			# Determine whether prediction is correct
 			correct_pred = False
 			if not invalid_char and len(pred_set) == len(correct_answer):
 				if np.all(pred_set == correct_answer):
 					correct_pred = True
+			if correct_pred:
+				print('Correct prediction!\n\n')
+			else:
+				print('Incorrect prediction.\n\n')
 			all_gen_correct_pred[prob_type].append(correct_pred)
 
 			# Save data
