@@ -2,11 +2,11 @@
 
 #SBATCH --partition=gpu_a100
 #SBATCH --gpus=1
-#SBATCH --job-name=8b-a-digits
+#SBATCH --job-name=14b-a-coords-symb
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=9
-#SBATCH --time=02:00:00
-#SBATCH --output=../output/matrices/Qwen3-8B/minimal/qwen3-8b_digits_minimal_%A.out
+#SBATCH --time=05:00:00
+#SBATCH --output=../output/matrices/Qwen3-14B/analogical/qwen3-14b_coords_symb_analogical_%A.out
 
 module purge
 module load 2025
@@ -23,11 +23,11 @@ cd $HOME/counterfactual-reasoning/digit_matrices
 
 # Analogical - 14B
 #srun python eval_gpt_matprob.py --id Qwen/Qwen3-14B --user_prompt_num 4 --sys_prompt_num 1 --prob_format digits
-#srun python eval_gpt_matprob.py --id Qwen/Qwen3-14B --user_prompt_num 4 --sys_prompt_num 1 --prob_format coords
-#srun python eval_gpt_matprob.py --id Qwen/Qwen3-14B --user_prompt_num 4 --sys_prompt_num 1 --prob_format symb
+srun python eval_gpt_matprob.py --id Qwen/Qwen3-14B --user_prompt_num 4 --sys_prompt_num 1 --prob_format coords
+srun python eval_gpt_matprob.py --id Qwen/Qwen3-14B --user_prompt_num 4 --sys_prompt_num 1 --prob_format symb
 
 # Minimal - 8B
-srun python eval_gpt_matprob.py --id Qwen/Qwen3-8B --user_prompt_num 2 --sys_prompt_num 1 --prob_format digits
+#srun python eval_gpt_matprob.py --id Qwen/Qwen3-8B --user_prompt_num 2 --sys_prompt_num 1 --prob_format digits
 #srun python eval_gpt_matprob.py --id Qwen/Qwen3-8B --user_prompt_num 2 --sys_prompt_num 1 --prob_format coords
 #srun python eval_gpt_matprob.py --id Qwen/Qwen3-8B --user_prompt_num 2 --sys_prompt_num 1 --prob_format symb
 
