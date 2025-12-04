@@ -1,0 +1,33 @@
+#!/bin/bash
+
+#SBATCH --partition=gpu_a100
+#SBATCH --gpus=1
+#SBATCH --job-name=8b-a
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=9
+#SBATCH --time=00:15:00
+#SBATCH --output=../output/stories/Qwen3-14B/analogical/qwen3-14b_new_analogical_%A.out
+
+module purge
+module load 2025
+module load Anaconda3/2025.06-1
+module load CUDA/12.8.0
+
+source activate thesis
+cd $HOME/counterfactual-reasoning/stories/gpt_experiments
+
+# Analogical - 8B
+#srun python stories_gpt.py --model Qwen/Qwen3-8B --promptstyle analogical --version new --ordering random
+#srun python stories_gpt.py --model Qwen/Qwen3-8B --promptstyle analogical --version orig --ordering random
+
+# Analogical - 14B
+#srun python stories_gpt.py --model Qwen/Qwen3-14B --promptstyle analogical --version new --ordering random
+#srun python stories_gpt.py --model Qwen/Qwen3-14B --promptstyle analogical --version orig --ordering random
+
+# Default - 8B
+srun python stories_gpt.py --model Qwen/Qwen3-8B --promptstyle default --version new --ordering ab
+#srun python stories_gpt.py --model Qwen/Qwen3-8B --promptstyle default --version orig --ordering random
+
+# Default - 14B
+#srun python stories_gpt.py --model Qwen/Qwen3-14B --promptstyle default --version new --ordering random
+#srun python stories_gpt.py --model Qwen/Qwen3-14B --promptstyle default --version orig --ordering random
