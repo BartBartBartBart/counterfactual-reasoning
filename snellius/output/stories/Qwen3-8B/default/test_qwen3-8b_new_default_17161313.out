@@ -1,0 +1,30 @@
+============================================================================================== 
+Warning! Mixing Conda and module environments may lead to corruption of the
+user environment. 
+We do not recommend users mixing those two environments unless absolutely
+necessary. Note that 
+SURF does not provide any support for Conda environment.
+For more information, please refer to our software policy page:
+https://servicedesk.surf.nl/wiki/display/WIKI/Software+policy+Snellius#SoftwarepolicySnellius-UseofAnacondaandMinicondaenvironmentsonSnellius 
+
+Remember that many packages have already been installed on the system and can
+be loaded using 
+the 'module load <package__name>' command. If you are uncertain if a package is
+already available 
+on the system, please use 'module avail' or 'module spider' to search for it.
+============================================================================================== 
+Loading model Qwen/Qwen3-8B...
+GPU memory available: 39.49 GB
+`torch_dtype` is deprecated! Use `dtype` instead!
+Flash Attention 2 not available (FlashAttention2 has been toggled on, but it cannot be used due to the following error: the package flash_attn seems to be not installed. Please refer to the documentation of https://huggingface.co/docs/transformers/perf_infer_gpu_one#flashattention-2 to install Flash Attention 2.), using default attention
+Loading checkpoint shards:   0%|          | 0/5 [00:00<?, ?it/s]Loading checkpoint shards:  20%|██        | 1/5 [00:04<00:17,  4.43s/it]Loading checkpoint shards:  40%|████      | 2/5 [00:08<00:13,  4.43s/it]Loading checkpoint shards:  60%|██████    | 3/5 [00:13<00:08,  4.39s/it]Loading checkpoint shards:  80%|████████  | 4/5 [00:16<00:04,  4.03s/it]Loading checkpoint shards: 100%|██████████| 5/5 [00:18<00:00,  3.06s/it]Loading checkpoint shards: 100%|██████████| 5/5 [00:18<00:00,  3.61s/it]
+Model loaded with default attention
+Model device: cuda:0
+GPU memory allocated: 15.26 GB, reserved: 15.28 GB
+Model loaded. Loading tokenizer...
+Model Qwen/Qwen3-8B and tokenizer loaded.
+Generating responses with model Qwen/Qwen3-8B...
+The following generation flags are not valid and may be ignored: ['temperature', 'top_k']. Set `TRANSFORMERS_VERBOSITY=info` for more details.
+srun: Job step aborted: Waiting up to 32 seconds for job step to finish.
+[2025-12-04T13:55:00.808] error: *** JOB 17161313 ON gcn62 CANCELLED AT 2025-12-04T13:55:00 DUE to SIGNAL Terminated ***
+[2025-12-04T13:55:00.809] error: *** STEP 17161313.0 ON gcn62 CANCELLED AT 2025-12-04T13:55:00 DUE to SIGNAL Terminated ***

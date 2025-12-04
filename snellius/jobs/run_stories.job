@@ -5,7 +5,7 @@
 #SBATCH --job-name=8b-d
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=9
-#SBATCH --time=00:15:00
+#SBATCH --time=00:30:00
 #SBATCH --output=../output/stories/Qwen3-8B/default/test_qwen3-8b_new_default_%A.out
 
 module purge
@@ -25,7 +25,7 @@ cd $HOME/counterfactual-reasoning/stories/gpt_experiment
 #srun python stories_gpt.py --model Qwen/Qwen3-14B --promptstyle analogical --version orig --ordering random
 
 # Default - 8B
-srun python stories_gpt.py --model Qwen/Qwen3-8B --promptstyle default --version new --ordering ab
+srun python stories_gpt.py --model Qwen/Qwen3-8B --promptstyle default --version new --ordering ab --verbose
 #srun python stories_gpt.py --model Qwen/Qwen3-8B --promptstyle default --version orig --ordering random
 
 # Default - 14B
