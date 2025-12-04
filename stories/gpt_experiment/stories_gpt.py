@@ -5,6 +5,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 import argparse
 import random
 from openai import AzureOpenAI
+import time
 
 argparser = argparse.ArgumentParser()
 argparser.add_argument('--model', type=str, default='0613', help='model version to use: 0125, 1106, 0613, Qwen_Qwen3-8B or Qwen_Qwen3-14B')
@@ -130,12 +131,14 @@ if not args.model.startswith('Qwen'):
         json_f.write(json_string)
         
 elif args.model.startswith('Qwen'):
+    print(f"Generating responses with model {args.model}...", flush=True)
     model_responses = {}
 
     model_responses["ordering"] = args.ordering
     model_responses["promptstyle"] = args.promptstyle
 
     for k in story_dict:
+        start = time.time()
         model_responses[k] = {}
         story_1 = story_dict[k]['Story_1']
         story_a = story_dict[k]['Story_A']
@@ -187,10 +190,11 @@ elif args.model.startswith('Qwen'):
                 # use_cche=True,  # Enable KV caching for faster generation
                 # num_beams=1,  # Greedy decoding (faster than beam search)
             )
+        end = time.time()
         out = tokenizer.batch_decode(gen[:, inputs["input_ids"].shape[1]:], skip_special_tokens=True)[0]
         clean_out = clean_text(out)
         if args.verbose or k == 0:
-            print(f"Full Qwen output: {clean_out}", flush=True)
+            print(f"Full Qwen output ({end-start:.2f} seconds): {clean_out}", flush=True)
         response_text = clean_out
         
         # Clean up GPU memory after generation
@@ -205,3 +209,5 @@ elif args.model.startswith('Qwen'):
 
     with open(f'../qwen_results/{args.model.replace("/", "_")}_{args.promptstyle}_{args.ordering}_responses_{no}.json', 'w') as json_f:
         json_f.write(json_string)
+else: 
+    print("Model not recognized.")
