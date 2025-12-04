@@ -17,10 +17,15 @@ def extract_answer(response):
     """
     response = response.lower()
 
-    if 'conclusion:' in response:
+    if 'answer:' in response:
+        answer = response.split('answer:')[1]
+        # print("split on final answer")
+    elif 'conclusion:' in response:
         answer = response.split('conclusion:')[1]
-    elif 'final answer:' in response:
-        answer = response.split('final answer:')[1]
+        # print("split on conclusion")
+    else:
+        answer = response
+        # print("no conclusion or final answer found")
 
     if 'story a' in answer and 'story b' in answer:
         # Check which story is indicated as better analogy

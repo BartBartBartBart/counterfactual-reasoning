@@ -102,6 +102,10 @@ if not args.model.startswith('Qwen'):
     gpt_responses = {}
 
     for k in story_dict:
+
+        if k.startswith("Attn"):
+            continue  # skip attention tasks
+
         gpt_responses[k] = {}
         story_1 = story_dict[k]['Story_1']
         story_a = story_dict[k]['Story_A']
@@ -139,6 +143,10 @@ elif args.model.startswith('Qwen'):
     model_responses["promptstyle"] = args.promptstyle
 
     for k in story_dict:
+
+        if k.startswith("Attn"):
+            continue  # skip attention tasks
+
         print(f"------------ {k} ------------")
         start = time.time()
         model_responses[k] = {}
