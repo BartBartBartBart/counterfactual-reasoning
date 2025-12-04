@@ -138,7 +138,7 @@ elif args.model.startswith('Qwen'):
     model_responses["promptstyle"] = args.promptstyle
 
     for k in story_dict:
-	print(f"------------ {k} ------------")
+        print(f"------------ {k} ------------")
         start = time.time()
         model_responses[k] = {}
         story_1 = story_dict[k]['Story_1']
@@ -204,7 +204,7 @@ elif args.model.startswith('Qwen'):
             torch.cuda.empty_cache()
 
         model_responses[k]['response'] = response_text
-        model_responses[k]['correct'] = correct_ind
+        model_responses[k]['correct_ind'] = correct_ind
     
     json_string = json.dumps(model_responses, indent=2)
 
