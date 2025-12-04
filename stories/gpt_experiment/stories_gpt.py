@@ -40,7 +40,7 @@ def clean_text(text: str) -> str:
 
 if args.model.startswith('Qwen'):
     print(f"Loading model {args.model}...")
-    MAX_NEW_TOKENS = 512
+    MAX_NEW_TOKENS = 1024 #512
 
     # Check available GPU memory
     if torch.cuda.is_available():
@@ -138,6 +138,7 @@ elif args.model.startswith('Qwen'):
     model_responses["promptstyle"] = args.promptstyle
 
     for k in story_dict:
+	print(f"------------ {k} ------------")
         start = time.time()
         model_responses[k] = {}
         story_1 = story_dict[k]['Story_1']
@@ -160,7 +161,7 @@ elif args.model.startswith('Qwen'):
         if args.promptstyle == "analogical":
             prompt += "\n\nBefore answering, recall 3 relevant examples, then provide your answer."
 
-        if args.verbose or k == 0:
+        if args.verbose or k == "Task 1":
             print(f"Prompt for task {k}:\n{prompt}\n", flush=True)
 
         messages = [
@@ -193,7 +194,7 @@ elif args.model.startswith('Qwen'):
         end = time.time()
         out = tokenizer.batch_decode(gen[:, inputs["input_ids"].shape[1]:], skip_special_tokens=True)[0]
         clean_out = clean_text(out)
-        if args.verbose or k == 0:
+        if args.verbose or k == "Task 1":
             print(f"Full Qwen output ({end-start:.2f} seconds): {clean_out}", flush=True)
         response_text = clean_out
         
