@@ -41,7 +41,7 @@ def clean_text(text: str) -> str:
 
 if args.model.startswith('Qwen'):
     print(f"Loading model {args.model}...")
-    MAX_NEW_TOKENS = 1024 #512
+    MAX_NEW_TOKENS = 1500 #512
 
     # Check available GPU memory
     if torch.cuda.is_available():
