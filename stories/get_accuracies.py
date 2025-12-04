@@ -16,17 +16,23 @@ def extract_answer(response):
     Returns 0 for Story A, 1 for Story B, or None if unclear.
     """
     response = response.lower()
-    if 'story a' in response and 'story b' in response:
+
+    if 'conclusion:' in response:
+        answer = response.split('conclusion:')[1]
+    elif 'final answer:' in response:
+        answer = response.split('final answer:')[1]
+
+    if 'story a' in answer and 'story b' in answer:
         # Check which story is indicated as better analogy
-        if 'story a' in response.split('story b')[0]:
+        if 'story a' in answer.split('story b')[0]:
             # Story A mentioned first
             return 0
-        elif 'story b' in response.split('story a')[0]:
+        elif 'story b' in answer.split('story a')[0]:
             # Story B mentioned first
             return 1
-    elif 'story a' in response:
+    elif 'story a' in answer:
         return 0
-    elif 'story b' in response:
+    elif 'story b' in answer:
         return 1
     return None
 
@@ -47,9 +53,9 @@ for k in responses:
 
     response_text = responses[k]['response']
     predicted = extract_answer(response_text)
-    correct = responses[k]['correct']
+    correct = responses[k]['correct_ind']
 
-    print(f'Task: {k}, Predicted: {predicted}, Correct: {correct}')
+    print(f'Task: {k}, Predicted: {predicted}, Correct: {predicted==correct}')
     
     if predicted == correct:
         total_correct += 1
