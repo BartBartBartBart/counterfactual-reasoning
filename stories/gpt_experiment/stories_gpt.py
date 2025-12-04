@@ -23,6 +23,7 @@ if not args.model.startswith('Qwen'):
     id=args.model
 
 no=args.version
+start_full_run = time.time()
 
 # Helper function to return the generated response of the model in a clean format
 def clean_text(text: str) -> str:
@@ -212,3 +213,6 @@ elif args.model.startswith('Qwen'):
         json_f.write(json_string)
 else: 
     print("Model not recognized.")
+
+end_full_run = time.time()
+print(f"Total time for full run: {end_full_run - start_full_run:.2f} seconds.")
