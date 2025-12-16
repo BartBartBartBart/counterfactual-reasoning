@@ -405,6 +405,9 @@ if args.noprompt:
 	save_fname += '_noprompt'
 if args.extra_split:
 	save_fname += '_extrasplit'
+if args.num_permuted == "symb" and args.gen == "gen":
+	save_fname += f'_{14}_alphs'
+	
 save_fname += '.npz'
 
 # Save single file with all data
