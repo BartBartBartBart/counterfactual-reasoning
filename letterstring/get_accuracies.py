@@ -276,12 +276,11 @@ elif args.symb_avg:
                 else:
                     print(f"No predictions for problem type {prob_type}")
 
-            # compute acc across alphabets
-            for prob_type, acc in alph_accuracies.items():
-                if prob_type in accuracies:
-                    accuracies[prob_type].append(acc)
-                else:
-                    accuracies[prob_type] = [acc]
+            # accuracies[alph] = alph_accuracies
+            # Compute average accuracy for this alphabet
+            if len(alph_accuracies) > 0:
+                avg_acc = sum(alph_accuracies.values()) / len(alph_accuracies)
+                accuracies[alph] = avg_acc
         # Save per gen accuracies
         acc_dict[gen] = accuracies  
 
