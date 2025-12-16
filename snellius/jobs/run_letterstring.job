@@ -2,11 +2,11 @@
 
 #SBATCH --partition=gpu_a100
 #SBATCH --gpus=1
-#SBATCH --job-name=8b-d-gen
+#SBATCH --job-name=14b-m-gen
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=9
-#SBATCH --time=01:00:00
-#SBATCH --output=../output/letterstring/Qwen3-8B/minimal/gen/qwen3-8b_gen_symb_14alphs_minimal_%A.out
+#SBATCH --time=00:45:00
+#SBATCH --output=../output/letterstring/Qwen3-14B/minimal/gen/qwen3-14b_gen_symb_14alphs_minimal_%A.out
 
 module purge
 module load 2025
@@ -30,7 +30,7 @@ cd $HOME/counterfactual-reasoning/letterstring
 #srun python eval_GPT_letterstring.py --gen gen --model "Qwen/Qwen3-14B" --num_permuted 5 --promptstyle minimal
 #srun python eval_GPT_letterstring.py --gen gen --model "Qwen/Qwen3-14B" --num_permuted 10 --promptstyle minimal
 #srun python eval_GPT_letterstring.py --gen gen --model "Qwen/Qwen3-14B" --num_permuted 20 --promptstyle minimal
-#srun python eval_GPT_letterstring.py --gen gen --model "Qwen/Qwen3-14B" --num_permuted symb --promptstyle minimal
+srun python eval_GPT_letterstring.py --gen gen --model "Qwen/Qwen3-14B" --num_permuted symb --promptstyle minimal
 
 # qwen3-14b - nogen - minimal
 #srun python eval_GPT_letterstring.py --gen nogen --model "Qwen/Qwen3-14B" --num_permuted 1 --promptstyle minimal
@@ -62,7 +62,7 @@ cd $HOME/counterfactual-reasoning/letterstring
 #srun python eval_GPT_letterstring.py --gen gen --model "Qwen/Qwen3-8B" --num_permuted 5 --promptstyle minimal
 #srun python eval_GPT_letterstring.py --gen gen --model "Qwen/Qwen3-8B" --num_permuted 10 --promptstyle minimal
 #srun python eval_GPT_letterstring.py --gen gen --model "Qwen/Qwen3-8B" --num_permuted 20 --promptstyle minimal
-srun python eval_GPT_letterstring.py --gen gen --model "Qwen/Qwen3-8B" --num_permuted symb --promptstyle minimal
+#srun python eval_GPT_letterstring.py --gen gen --model "Qwen/Qwen3-8B" --num_permuted symb --promptstyle minimal
 
 # qwen3-8b - nogen - minimal
 #srun python eval_GPT_letterstring.py --gen nogen --model "Qwen/Qwen3-8B" --num_permuted 1 --promptstyle minimal
