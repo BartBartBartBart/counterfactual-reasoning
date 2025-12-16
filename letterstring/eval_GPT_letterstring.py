@@ -119,7 +119,43 @@ elif args.model is not None and not args.debug:
 
 
 # Load all problems
-if args.gen == 'gen':
+if args.gen == 'gen' and args.num_permuted == "symb":
+	all_prob = np.load(f'./problems/{args.gen}/all_prob_{args.num_permuted}_14_gpt_human_alphs.npz', allow_pickle=True)['all_prob']
+	
+	# # Sanity check, loop through all alphabets and print problem types and number of trials
+	# all_prob = all_prob.item()
+	# for alph in all_prob.keys():
+	# 	print(f"Alphabet: {alph}")
+	# 	for prob_type in all_prob[alph].keys():
+	# 		if prob_type in ['shuffled_letters', 'shuffled_alphabet']:
+	# 			continue
+	# 		num_trials = len(all_prob[alph][prob_type])
+	# 		# print(all_prob[alph][prob_type])
+	# 		print(f"  Problem type: {prob_type}, Number of trials: {num_trials}")
+
+	# Take only first 7 alphabets and 1-gen problems
+	all_prob_filtered = {}
+	for id, alph in enumerate(all_prob.keys()):
+		if id >= 7:
+			break
+		all_prob_filtered[alph] = {}
+		for key in all_prob[alph].keys():
+			if not key.startswith('2gen') and not key.startswith('3gen'):
+				all_prob_filtered[alph][key] = all_prob[alph][key]
+	all_prob = all_prob_filtered
+
+	# # Sanity check, loop through all alphabets and print problem types and number of trials
+	# for alph in all_prob.keys():
+	# 	print(f"Alphabet: {alph}")
+	# 	for prob_type in all_prob[alph].keys():
+	# 		if prob_type in ['shuffled_letters', 'shuffled_alphabet']:
+	# 			continue
+	# 		num_trials = len(all_prob[alph][prob_type])
+	# 		# print(all_prob[alph][prob_type])
+	# 		print(f"  Problem type: {prob_type}, Number of trials: {num_trials}")
+	# sys.exit()
+
+elif args.gen == 'gen':
 	all_prob = np.load(f'./problems/{args.gen}/all_prob_{args.num_permuted}_7_gpt_human_alphs.npz', allow_pickle=True)['all_prob']
 elif args.gen == 'nogen':
 	all_prob = np.load(f'./problems/{args.gen}/all_prob_{args.num_permuted}_7_human.npz', allow_pickle=True)['all_prob']
