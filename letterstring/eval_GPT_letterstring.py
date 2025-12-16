@@ -123,7 +123,7 @@ if args.gen == 'gen' and args.num_permuted == "symb":
 	all_prob = np.load(f'./problems/{args.gen}/all_prob_{args.num_permuted}_14_gpt_human_alphs.npz', allow_pickle=True)['all_prob']
 	
 	# # Sanity check, loop through all alphabets and print problem types and number of trials
-	# all_prob = all_prob.item()
+	all_prob = all_prob.item()
 	# for alph in all_prob.keys():
 	# 	print(f"Alphabet: {alph}")
 	# 	for prob_type in all_prob[alph].keys():
@@ -143,6 +143,9 @@ if args.gen == 'gen' and args.num_permuted == "symb":
 			if not key.startswith('2gen') and not key.startswith('3gen'):
 				all_prob_filtered[alph][key] = all_prob[alph][key]
 	all_prob = all_prob_filtered
+
+	# convert back to nd array for consistency
+	all_prob = np.array(all_prob, dtype=object)
 
 	# # Sanity check, loop through all alphabets and print problem types and number of trials
 	# for alph in all_prob.keys():
