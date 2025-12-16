@@ -12,6 +12,7 @@ parser.add_argument('--gen', help='gen or nogen')
 parser.add_argument('--extra_split', action='store_true', help='whether to include extra split for 3gen problems')
 parser.add_argument('--gen_avg', action='store_true', help='calculate avg across gen')
 parser.add_argument('--verbose', action='store_true', help='whether to print detailed logs')
+parser.add_argument('--symb_avg', action='store_true', help='calculate accuracies for symbolic alphabet')
 args = parser.parse_args()
 
 if args.gen_avg and (args.model == None or args.promptstyle == None):
@@ -45,7 +46,7 @@ def check_partly_correct(true, pred):
         # print(f"Not partly correct due to surrounding chars: True: {true}, Pred: {pred}, before {before}, after {after}")
     return False
 
-if not args.gen_avg:
+if not args.gen_avg and not args.symb_avg:
     acc_dict = {}
 
     response_folder = f"{args.model}_prob_predictions_multi_alph/{args.gen}"
@@ -171,6 +172,7 @@ elif args.gen_avg:
     three_gen_prob_names = ['3gen_split1', '3gen_split2', '3gen_split3', '3gen_split4', '3gen_split5', '3gen_split6', '3gensplit7']
 
     for gen in ['gen', 'nogen']:
+
         for num_permuted in [1,2,5,10,20]:
             response_folder = f"{args.model}_prob_predictions_multi_alph/{gen}"
             response_file = f"{args.model}_letterstring_results_{num_permuted}_multi_alph_gptprobs{"_" + args.promptstyle if args.promptstyle else ''}.npz"
@@ -224,3 +226,70 @@ elif args.gen_avg:
         for gen_key in gen_accs.keys():
             avg_acc = gen_accs[gen_key][[1,2,5,10,20].index(num_permuted)]
             print(f"Generation: {gen_key}, Average Accuracy: {avg_acc}")
+
+elif args.symb_avg:
+
+    # the symbolic alphabet only has 2 problem types: succ and pred
+    # only for 0 and 1 gen
+    acc_dict = {}
+    for gen in ['gen', 'nogen']:
+        response_folder = f"{args.model}_prob_predictions_multi_alph/{gen}"
+        response_file = f"{args.model}_letterstring_results_symb_multi_alph_gptprobs{"_" + args.promptstyle if args.promptstyle else ''}.npz"
+        print(f"Loading responses from {response_folder}/{response_file}...")
+        responses = np.load(f"{response_folder}/{response_file}", allow_pickle=True)["data"].item()
+
+        accuracies = {}
+
+        for alph in responses:
+            print(f"Processing alphabet: {alph}")
+            all_prob_type_responses = responses[alph]['responses']
+            all_trues = responses[alph]['targets']
+
+            alph_accuracies = {}
+
+            for prob_type in all_prob_type_responses.keys():
+                prob_type_responses = all_prob_type_responses[prob_type]
+                prob_type_trues = all_trues[prob_type]
+
+                total = 0
+                correct = 0
+
+                for pred, true in zip(prob_type_responses, prob_type_trues):
+                    pred = pred.strip(" '").replace(" ", "").lower()
+                    if type(true[0]) == np.int64:
+                        true = [str(x) for x in true]
+                    true = ''.join(true).lower()
+                    if args.verbose:
+                        print(f'Pred: {pred}, True: {true}')
+                    if pred == true:
+                        correct += 1
+                    elif true in pred:
+                        decision = check_partly_correct(true, pred)
+                        if decision:
+                            correct += 1
+                    total += 1
+
+                if total > 0:
+                    accuracy = correct / total
+                    print(f"Accuracy for problem type {prob_type}: {accuracy}")
+                    alph_accuracies[prob_type] = accuracy
+                else:
+                    print(f"No predictions for problem type {prob_type}")
+
+            # compute acc across alphabets
+            for prob_type, acc in alph_accuracies.items():
+                if prob_type in accuracies:
+                    accuracies[prob_type].append(acc)
+                else:
+                    accuracies[prob_type] = [acc]
+        # Save per gen accuracies
+        acc_dict[gen] = accuracies  
+
+
+    print(f"\n=== Summary of Accuracies for Symbolic Alphabet ===\n")
+    for gen in acc_dict:
+        print(f"--- Generation: {gen} ---")
+        gen_accuracies = acc_dict[gen]
+        for alph, acc in gen_accuracies.items():
+            print(f"Alphabet: {alph}, Accuracy: {acc}")
+        print("\n")        
