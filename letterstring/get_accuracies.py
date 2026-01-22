@@ -234,7 +234,7 @@ elif args.symb_avg:
     acc_dict = {}
     for gen in ['gen', 'nogen']:
         response_folder = f"{args.model}_prob_predictions_multi_alph/{gen}"
-        response_file = f"{args.model}_letterstring_results_symb_multi_alph_gptprobs{"_" + args.promptstyle if args.promptstyle else ''}.npz"
+        response_file = f"{args.model}_letterstring_results_symb_multi_alph_gptprobs{"_" + args.promptstyle if args.promptstyle else ''}{'_14_alphs' if gen == 'gen' else ''}.npz"
         print(f"Loading responses from {response_folder}/{response_file}...")
         responses = np.load(f"{response_folder}/{response_file}", allow_pickle=True)["data"].item()
 
@@ -287,8 +287,9 @@ elif args.symb_avg:
 
     print(f"\n=== Summary of Accuracies for Symbolic Alphabet ===\n")
     for gen in acc_dict:
-        print(f"--- Generation: {gen} ---")
+        print(f"--- Generation: {'0-gen' if gen == 'nogen' else '1-gen'} ---")
         gen_accuracies = acc_dict[gen]
         for alph, acc in gen_accuracies.items():
             print(f"Alphabet: {alph}, Accuracy: {acc}")
+        print(f"Overall Average Accuracy for {'0-gen' if gen == 'nogen' else '1-gen'}: {sum(gen_accuracies.values()) / len(gen_accuracies)}")
         print("\n")        
