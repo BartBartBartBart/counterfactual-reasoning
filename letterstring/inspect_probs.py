@@ -173,6 +173,7 @@ def exemplar_probs(full_text, tokenizer, scores, generated_ids):
 
 	# Calculate probability of all words after 'exemplar'
 	words = exemplar_section.split()
+	print(words)
 	prob_per_word = []
 	logprob = 0.0
 	for i, word in enumerate(words):
