@@ -181,7 +181,7 @@ def exemplar_probs(full_text, tokenizer, scores, generated_ids):
 			step = len(generated_ids) - len(token_ids) + j
 			if step < len(scores):
 				token_logprob = torch.log_softmax(scores[step][0], dim=-1)[token_id].item()
-				prob_per_word.append(token_logprob)
+				prob_per_word.append(np.exp(token_logprob))
 				logprob += token_logprob
 	prob = np.exp(logprob)
 	return prob, prob_per_word
@@ -318,7 +318,7 @@ for alph, perm_alph in zip(all_prob.item().keys(), all_prob_10perm.item().keys()
 		prob_type_targets_perm = []
 		for t in range(N_trials_per_prob_type):
 			if t == 0:
-				t += 1  # skip first trial for speed
+				t += 2  # skip first trial for speed
 				continue
 			print('trial ' + str(t+1) + ' of ' + str(N_trials_per_prob_type) + '...', flush=True)
 			prob = all_prob.item()[alph][prob_types[p]]['prob'][t]
@@ -385,10 +385,10 @@ for alph, perm_alph in zip(all_prob.item().keys(), all_prob_10perm.item().keys()
 					print("Calculating probabilities...", flush=True)
 					
 					probs, probs_per_word = exemplar_probs(full_text, tokenizer, scores, generated_ids)
-					print(f"Probability of exemplar section: {prob}", flush=True)
+					print(f"Probability of exemplar section: {probs}", flush=True)
 					print(f"Probability per word: {probs_per_word}", flush=True)
 					probs_perm, probs_perm_per_word = exemplar_probs(full_text_perm, tokenizer, scores_perm, generated_ids_perm)
-					print(f"Probability of exemplar section (permuted): {prob_perm}", flush=True)	
+					print(f"Probability of exemplar section (permuted): {probs_perm}", flush=True)	
 					print(f"Probability per word (permuted): {probs_perm_per_word}", flush=True)
 
 					end = time.time()
