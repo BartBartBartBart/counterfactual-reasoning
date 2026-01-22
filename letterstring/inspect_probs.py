@@ -166,11 +166,10 @@ def exemplar_probs(full_text, tokenizer, scores, generated_ids):
 	# Find probabilities of exemplars
 	if 'exemplar' in full_text:
 		exemplar_section = full_text.split('exemplar')[1]
-
+			
 		# Calculate probability of all words after 'exemplar'
 		words = exemplar_section.split()
 		logprob = 0.0
-
 		for i, word in enumerate(words):
 			token_ids = tokenizer.encode(word, add_special_tokens=False)
 			for j, token_id in enumerate(token_ids):
@@ -179,7 +178,9 @@ def exemplar_probs(full_text, tokenizer, scores, generated_ids):
 					token_logprob = torch.log_softmax(scores[step][0], dim=-1)[token_id].item()
 					logprob += token_logprob
 		prob = np.exp(logprob)
-		print(f"Probability of exemplar section: {prob}", flush=True)		
+		return prob
+	else:
+		return None
 
 
 if args.promptstyle == "webb" and int(args.num_permuted) >1:
@@ -359,27 +360,17 @@ for alph, perm_alph in zip(all_prob.item().keys(), all_prob_10perm.item().keys()
 						print('trying again...')
 						time.sleep(5)
 				elif args.model.startswith("Qwen"):
+					print("Gathering response...", flush=True)
 					generated_ids, scores, full_text = get_probs(messages, model, tokenizer)
 					generated_ids_perm, scores_perm, full_text_perm = get_probs(messages_perm, model, tokenizer)
+					print("Response gathered.", flush=True)
 
-					# Find probabilities of exemplars
-					if 'exemplar' in full_text:
-						exemplar_section = full_text.split('exemplar')[1]
-						 
-						# Calculate probability of all words after 'exemplar'
-						words = exemplar_section.split()
-						logprob = 0.0
-						for i, word in enumerate(words):
-							token_ids = tokenizer.encode(word, add_special_tokens=False)
-							for j, token_id in enumerate(token_ids):
-								step = len(generated_ids) - len(token_ids) + j
-								if step < len(scores):
-									token_logprob = torch.log_softmax(scores[step][0], dim=-1)[token_id].item()
-									logprob += token_logprob
-						prob = np.exp(logprob)
-						print(f"Probability of exemplar section: {prob}", flush=True)
-
-					
+					print("Calculating probabilities...", flush=True)
+					probs = exemplar_probs(full_text, tokenizer, scores, generated_ids)
+					probs_perm = exemplar_probs(full_text_perm, tokenizer, scores_perm, generated_ids_perm)
+					print(f"Probability of exemplar section: {prob}", flush=True)
+					print(f"Probability of exemplar section (permuted): {prob_perm}", flush=True)	
+										
 
 					sys.exit()
 
