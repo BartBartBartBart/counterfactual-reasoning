@@ -1,0 +1,75 @@
+============================================================================================== 
+Warning! Mixing Conda and module environments may lead to corruption of the
+user environment. 
+We do not recommend users mixing those two environments unless absolutely
+necessary. Note that 
+SURF does not provide any support for Conda environment.
+For more information, please refer to our software policy page:
+https://servicedesk.surf.nl/wiki/display/WIKI/Software+policy+Snellius#SoftwarepolicySnellius-UseofAnacondaandMinicondaenvironmentsonSnellius 
+
+Remember that many packages have already been installed on the system and can
+be loaded using 
+the 'module load <package__name>' command. If you are uncertain if a package is
+already available 
+on the system, please use 'module avail' or 'module spider' to search for it.
+============================================================================================== 
+Loading model Qwen/Qwen3-8B...
+GPU memory available: 39.49 GB
+`torch_dtype` is deprecated! Use `dtype` instead!
+Flash Attention 2 not available (FlashAttention2 has been toggled on, but it cannot be used due to the following error: the package flash_attn seems to be not installed. Please refer to the documentation of https://huggingface.co/docs/transformers/perf_infer_gpu_one#flashattention-2 to install Flash Attention 2.), using default attention
+Loading checkpoint shards:   0%|          | 0/5 [00:00<?, ?it/s]Loading checkpoint shards:  20%|██        | 1/5 [00:04<00:18,  4.68s/it]Loading checkpoint shards:  40%|████      | 2/5 [00:09<00:14,  4.69s/it]Loading checkpoint shards:  60%|██████    | 3/5 [00:14<00:09,  4.66s/it]Loading checkpoint shards:  80%|████████  | 4/5 [00:17<00:04,  4.29s/it]Loading checkpoint shards: 100%|██████████| 5/5 [00:19<00:00,  3.26s/it]Loading checkpoint shards: 100%|██████████| 5/5 [00:19<00:00,  3.83s/it]
+Model loaded with default attention
+Model device: cuda:0
+GPU memory allocated: 15.26 GB, reserved: 15.26 GB
+Model loaded. Loading tokenizer...
+Model Qwen/Qwen3-8B and tokenizer loaded.
+alph_0
+alph_0
+Alphabet:
+a b c d e f g h i j k l m n o p q r s t u v w x y z
+Permuted Alphabet:
+a q c d e o g h i n k l m u f p y r s t w v b x z j
+Problem type: succ - 1/7
+trial 1 of 10...
+
+=== PROMPT ===
+
+System message: You are able to solve letter-string analogies
+
+User message: Use the following alphabet to complete the pattern.
+
+a b c d e f g h i j k l m n o p q r s t u v w x y z
+
+First, describe 3 relevant exemplars that are distinct from this problem, then give the final answer. Answer with only the examples and the final answer with no further explanation. Put your final answer between double brackets. Note that the alphabet may be in an unfamiliar order. Complete the pattern using this order.
+
+[e f g h] [e f g i]
+[f g h i] [
+
+
+--- TARGET LETTERS ---
+
+['f', 'g', 'h', 'j']
+
+=== PROMPT PERMUTED ===
+
+System message: You are able to solve letter-string analogies
+
+User message: Use the following alphabet to complete the pattern.
+
+a q c d e o g h i n k l m u f p y r s t w v b x z j
+
+First, describe 3 relevant exemplars that are distinct from this problem, then give the final answer. Answer with only the examples and the final answer with no further explanation. Put your final answer between double brackets. Note that the alphabet may be in an unfamiliar order. Complete the pattern using this order.
+
+[o g h i] [o g h n]
+[v b x z] [
+
+
+--- TARGET LETTERS PERMUTED ---
+
+['v', 'b', 'x', 'j']
+Gathering response...
+The following generation flags are not valid and may be ignored: ['top_k']. Set `TRANSFORMERS_VERBOSITY=info` for more details.
+Response gathered.
+Calculating probabilities...
+Probability of exemplar section: [[['e', 'f', 'g', 'h'], ['e', 'f', 'g', 'i']], [['f', 'g', 'h', 'i'], ['f', 'g', 'h', 'j']]]
+Probability of exemplar section (permuted): [[['o', 'g', 'h', 'i'], ['o', 'g', 'h', 'n']], [['v', 'b', 'x', 'z'], ['v', 'b', 'x', 'j']]]
