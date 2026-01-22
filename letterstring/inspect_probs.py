@@ -173,7 +173,7 @@ def exemplar_probs(full_text, tokenizer, scores, generated_ids):
 
 	# Calculate probability of all words after 'exemplar'
 	words = exemplar_section.split()
-	prob_per_word = {}
+	prob_per_word = []
 	logprob = 0.0
 	for i, word in enumerate(words):
 		token_ids = tokenizer.encode(word, add_special_tokens=False)
@@ -181,7 +181,7 @@ def exemplar_probs(full_text, tokenizer, scores, generated_ids):
 			step = len(generated_ids) - len(token_ids) + j
 			if step < len(scores):
 				token_logprob = torch.log_softmax(scores[step][0], dim=-1)[token_id].item()
-				prob_per_word[word] = np.exp(token_logprob)
+				prob_per_word.append((word, np.exp(token_logprob)))
 				logprob += token_logprob
 	prob = np.exp(logprob)
 	return prob, prob_per_word
