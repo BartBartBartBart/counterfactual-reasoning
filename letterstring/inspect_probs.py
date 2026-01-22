@@ -164,24 +164,27 @@ def get_probs(messages, model, tokenizer):
 
 def exemplar_probs(full_text, tokenizer, scores, generated_ids):
 	# Find probabilities of exemplars
-	if 'exemplar' in full_text:
+	if 'exemplars' in full_text.lower():
 		exemplar_section = full_text.split('exemplar')[1]
-			
-		# Calculate probability of all words after 'exemplar'
-		words = exemplar_section.split()
-		logprob = 0.0
-		for i, word in enumerate(words):
-			token_ids = tokenizer.encode(word, add_special_tokens=False)
-			for j, token_id in enumerate(token_ids):
-				step = len(generated_ids) - len(token_ids) + j
-				if step < len(scores):
-					token_logprob = torch.log_softmax(scores[step][0], dim=-1)[token_id].item()
-					logprob += token_logprob
-		prob = np.exp(logprob)
-		return prob
-	else:
+	elif 'examples' in full_text.lower():
+		exemplar_section = full_text.split('examples')[1]
+	else: 
 		return None
 
+	# Calculate probability of all words after 'exemplar'
+	words = exemplar_section.split()
+	prob_per_word = []
+	logprob = 0.0
+	for i, word in enumerate(words):
+		token_ids = tokenizer.encode(word, add_special_tokens=False)
+		for j, token_id in enumerate(token_ids):
+			step = len(generated_ids) - len(token_ids) + j
+			if step < len(scores):
+				token_logprob = torch.log_softmax(scores[step][0], dim=-1)[token_id].item()
+				prob_per_word.append(token_logprob)
+				logprob += token_logprob
+	prob = np.exp(logprob)
+	return prob, prob_per_word
 
 if args.promptstyle == "webb" and int(args.num_permuted) >1:
 	print("promptstyle webb can only be used with an unpermuted alphabet")
@@ -314,6 +317,9 @@ for alph, perm_alph in zip(all_prob.item().keys(), all_prob_10perm.item().keys()
 		prob_type_targets = []
 		prob_type_targets_perm = []
 		for t in range(N_trials_per_prob_type):
+			if t == 0:
+				t += 1  # skip first trial for speed
+				continue
 			print('trial ' + str(t+1) + ' of ' + str(N_trials_per_prob_type) + '...', flush=True)
 			prob = all_prob.item()[alph][prob_types[p]]['prob'][t]
 			full_tgt_letters = all_prob.item()[alph][prob_types[p]]['tgt_letters'][t]
@@ -372,16 +378,18 @@ for alph, perm_alph in zip(all_prob.item().keys(), all_prob_10perm.item().keys()
 					clean_out_perm = clean_text(full_text_perm)
 					print(clean_out_perm, flush=True)
 
-					print("SCORES AND PROBS:", flush=True)
-					print(scores, flush=True)
-					print(scores_perm, flush=True)
+					# print("SCORES AND PROBS:", flush=True)
+					# print(scores, flush=True)
+					# print(scores_perm, flush=True)
 
 					print("Calculating probabilities...", flush=True)
-					probs = exemplar_probs(full_text, tokenizer, scores, generated_ids)
-					probs_perm = exemplar_probs(full_text_perm, tokenizer, scores_perm, generated_ids_perm)
+					probs, probs_per_word = exemplar_probs(full_text, tokenizer, scores, generated_ids)
+					probs_perm, probs_perm_per_word = exemplar_probs(full_text_perm, tokenizer, scores_perm, generated_ids_perm)
 					print(f"Probability of exemplar section: {prob}", flush=True)
+					print(f"Probability per word: {probs_per_word}", flush=True)
 					print(f"Probability of exemplar section (permuted): {prob_perm}", flush=True)	
-										
+					print(f"Probability per word (permuted): {probs_perm_per_word}", flush=True)
+
 					end = time.time()
 					print(f"Time taken for generation and prob calculation: {end-start} seconds.", flush=True)
 					sys.exit()
