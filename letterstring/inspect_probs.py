@@ -169,7 +169,7 @@ def exemplar_probs(full_text, tokenizer, scores, generated_ids):
 	elif 'examples' in full_text.lower():
 		exemplar_section = full_text.split('examples')[1]
 	else: 
-		return None
+		exemplar_section = full_text
 
 	# Calculate probability of all words after 'exemplar'
 	words = exemplar_section.split()
