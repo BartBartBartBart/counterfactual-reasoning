@@ -365,13 +365,25 @@ for alph, perm_alph in zip(all_prob.item().keys(), all_prob_10perm.item().keys()
 					generated_ids_perm, scores_perm, full_text_perm = get_probs(messages_perm, model, tokenizer)
 					print("Response gathered.", flush=True)
 
+					print("\n=== RESPONSE ===\n", flush=True)
+					clean_out = clean_text(full_text)
+					print(clean_out, flush=True)
+					print("\n=== RESPONSE PERMUTED ===\n", flush=True)
+					clean_out_perm = clean_text(full_text_perm)
+					print(clean_out_perm, flush=True)
+
+					print("SCORES AND PROBS:", flush=True)
+					print(scores, flush=True)
+					print(scores_perm, flush=True)
+
 					print("Calculating probabilities...", flush=True)
 					probs = exemplar_probs(full_text, tokenizer, scores, generated_ids)
 					probs_perm = exemplar_probs(full_text_perm, tokenizer, scores_perm, generated_ids_perm)
 					print(f"Probability of exemplar section: {prob}", flush=True)
 					print(f"Probability of exemplar section (permuted): {prob_perm}", flush=True)	
 										
-
+					end = time.time()
+					print(f"Time taken for generation and prob calculation: {end-start} seconds.", flush=True)
 					sys.exit()
 
 					# Clean up GPU memory after generation
