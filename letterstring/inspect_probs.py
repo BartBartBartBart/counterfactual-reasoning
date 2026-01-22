@@ -165,9 +165,9 @@ def get_probs(messages, model, tokenizer):
 def exemplar_probs(full_text, tokenizer, scores, generated_ids):
 	# Find probabilities of exemplars
 	if 'exemplars' in full_text.lower():
-		exemplar_section = full_text.split('exemplar')[1]
+		exemplar_section = full_text.lower().split('exemplar')[1]
 	elif 'examples' in full_text.lower():
-		exemplar_section = full_text.split('examples')[1]
+		exemplar_section = full_text.lower().split('examples')[1]
 	else: 
 		exemplar_section = full_text
 
@@ -383,10 +383,11 @@ for alph, perm_alph in zip(all_prob.item().keys(), all_prob_10perm.item().keys()
 					# print(scores_perm, flush=True)
 
 					print("Calculating probabilities...", flush=True)
+					
 					probs, probs_per_word = exemplar_probs(full_text, tokenizer, scores, generated_ids)
-					probs_perm, probs_perm_per_word = exemplar_probs(full_text_perm, tokenizer, scores_perm, generated_ids_perm)
 					print(f"Probability of exemplar section: {prob}", flush=True)
 					print(f"Probability per word: {probs_per_word}", flush=True)
+					probs_perm, probs_perm_per_word = exemplar_probs(full_text_perm, tokenizer, scores_perm, generated_ids_perm)
 					print(f"Probability of exemplar section (permuted): {prob_perm}", flush=True)	
 					print(f"Probability per word (permuted): {probs_perm_per_word}", flush=True)
 
