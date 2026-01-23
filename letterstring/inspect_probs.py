@@ -7,32 +7,21 @@ import time
 import sys
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
-from huggingface_hub import login
 import torch.nn.functional as F
 
-
 start = time.time()
+
+# Settings
+parser = argparse.ArgumentParser()
+parser.add_argument('--promptstyle', help='Give a prompt style: human, minimal, hw, webb, webbplus')
+parser.add_argument('--model', help='give model name', default=None)
+parser.add_argument('--verbose', action='store_true', help="Print verbose output.")
+parser.add_argument('--debug', action='store_true', help="Debug mode - do not load large models")
+args = parser.parse_args()
 
 def check_path(path):
 	if not os.path.exists(path):
 		os.mkdir(path)
-
-# Settings
-parser = argparse.ArgumentParser()
-parser.add_argument('--sentence', action='store_true', help="Present problem in sentence format.")
-parser.add_argument('--noprompt', action='store_true', help="Present problem without prompt.")
-parser.add_argument('--newprompt', action='store_true', help="Present problem with new prompt.")
-parser.add_argument('--promptstyle', help='Give a prompt style: human, minimal, hw, webb, webbplus')
-parser.add_argument('--num_permuted', help="give a number of letters in the alphabet to permute from 2 to 26")
-parser.add_argument('--gpt', help='give gpt model: 3, 35, 4', default=None)
-parser.add_argument('--model', help='give model name', default=None)
-parser.add_argument('--gen', help='give gen for generalized problems or nogen for non generalized')
-parser.add_argument('--hf_token', help='Huggingface token for model loading', default=None)
-parser.add_argument('--verbose', action='store_true', help="Print verbose output.")
-parser.add_argument('--extra-split', action='store_true', help="Test only 3gensplit7")
-parser.add_argument('--use-8bit', action='store_true', help="Use 8-bit quantization to save memory (may be slower)")
-parser.add_argument('--debug', action='store_true', help="Debug mode - do not load large models")
-args = parser.parse_args()
 
 # Helper function to return the generated response of the model in a clean format
 def clean_text(text: str) -> str:
@@ -162,42 +151,89 @@ def get_probs(messages, model, tokenizer):
 	full_text = tokenizer.decode(generated_ids, skip_special_tokens=True)
 	return generated_ids, scores, full_text
 
-def exemplar_probs(full_text, tokenizer, scores, generated_ids):
-	# Find probabilities of exemplars
-	if 'exemplars' in full_text.lower():
-		exemplar_section = full_text.lower().split('exemplar')[1]
-	elif 'examples' in full_text.lower():
-		exemplar_section = full_text.lower().split('examples')[1]
-	else: 
-		exemplar_section = full_text
+def exemplar_probs(tokenizer, scores, generated_ids, verbose=False):
+	# Find probabilities of exemplars using the actual generated token IDs
+	prob_per_exemplar = []
+	total_probs = []
+	in_exemplar = False
+	opening_count = 0
+	closing_count = 0
+	exemplar_count = 0
+	exemplar_token_indices = []  # List of indices into generated_ids for current exemplar
 
-	# Calculate probability of all words after 'exemplar'
-	words = exemplar_section.split()
-	prob_per_word = []
-	logprob = 0.0
-	for i, word in enumerate(words):
-		token_ids = tokenizer.encode(word, add_special_tokens=False)
-		for j, token_id in enumerate(token_ids):
-			step = len(generated_ids) - len(token_ids) + j
-			if step < len(scores):
-				token_logprob = torch.log_softmax(scores[step][0], dim=-1)[token_id].item()
-				prob_per_word.append((word, np.exp(token_logprob)))
-				logprob += token_logprob
-	prob = np.exp(logprob)
-	return prob, prob_per_word
+	if verbose:
+		print(f"Total generated tokens: {len(generated_ids)}")
+		print(f"Generated text: {tokenizer.decode(generated_ids)}")
+		print(f"Total scores available: {len(scores)}\n")
+
+	# Loop through actual generated tokens
+	for token_idx, token_id in enumerate(generated_ids):
+		if exemplar_count == 3:
+			break
+
+		token_text = tokenizer.decode([token_id])
+
+		# Check for opening bracket - start/continue exemplar
+		if "[" in token_text:
+			in_exemplar = True
+			opening_count += 1
+			exemplar_token_indices.append(token_idx)
+			# print(f"Opening bracket at generated token {token_idx}, opening_count={opening_count}")
+			continue
+
+		# Collect tokens while in exemplar
+		if in_exemplar:
+			exemplar_token_indices.append(token_idx)
+
+			# Check for closing bracket
+			if "]" in token_text:
+				closing_count += 1
+				# print(f"Closing bracket at generated token {token_idx}, closing_count={closing_count}")
+
+				# Check if exemplar is complete (2 opening, 2 closing)
+				if opening_count == closing_count and opening_count == 2:
+					# Calculate probabilities for this exemplar
+					prob_per_word = []
+					logprob = 0.0
+					exemplar_count += 1
+
+					if verbose:
+						print(f"\nComplete exemplar with tokens: {[tokenizer.decode([generated_ids[i]]) for i in exemplar_token_indices]}")
+
+					for tok_idx in exemplar_token_indices:
+						tok_id = generated_ids[tok_idx].item() if hasattr(generated_ids[tok_idx], 'item') else generated_ids[tok_idx]
+						step = tok_idx
+
+						if step >= 0 and step < len(scores):
+							token_logprob = torch.log_softmax(scores[step][0], dim=-1)[tok_id].item()
+							token_decoded = tokenizer.decode([tok_id])
+							token_prob = np.exp(token_logprob)
+							prob_per_word.append((token_decoded, token_prob))
+							if verbose:
+								print(f"  token '{token_decoded}' (id {tok_id}) at step {step}, logprob {token_logprob:.4f}, prob {token_prob:.2e}")
+							logprob += token_logprob
+						else:
+							print(f"  WARNING: step {step} out of range for scores (len={len(scores)})")
+
+					# Store results for this exemplar
+					total_prob = np.exp(logprob)
+					total_probs.append(total_prob)
+					prob_per_exemplar.append(prob_per_word)
+
+					if verbose:
+						print(f"Total probability for this exemplar: {total_prob}\n")
+
+					# Reset for next exemplar
+					exemplar_token_indices = []
+					opening_count = 0
+					closing_count = 0
+					in_exemplar = False
+
+	return prob_per_exemplar, total_probs
 
 if args.promptstyle == "webb" and int(args.num_permuted) >1:
 	print("promptstyle webb can only be used with an unpermuted alphabet")
 	sys.exit()
-
-# GPT-3 settings
-openai.api_key = "API KEY HERE"
-if args.gpt == '3':
-    kwargs = {"engine":"text-davinci-003", "temperature":0, "max_tokens":40, "stop":"\n", "echo":False, "logprobs":1, }
-elif args.gpt == '35':
-    kwargs = { "model":"gpt-3.5-turbo", "temperature":0, "max_tokens":40, "stop":"\n"}
-elif args.gpt == '4':
-    kwargs = { "model":"gpt-4", "temperature":0, "max_tokens":40, "stop":"\n"}
 	
 # Load Qwen3  
 elif args.model is not None and not args.debug:
@@ -216,18 +252,9 @@ elif args.model is not None and not args.debug:
 		"torch_dtype": torch.bfloat16 if torch.cuda.is_available() else torch.float32,
 		"trust_remote_code": True,
 		"low_cpu_mem_usage": True,
+		"device_map": "cuda:0" if torch.cuda.is_available() else "cpu",
 	}
-	
-	# Use 8-bit quantization if requested (saves memory but may be slower)
-	if args.use_8bit:
-		from transformers import BitsAndBytesConfig
-		load_kwargs["quantization_config"] = BitsAndBytesConfig(load_in_8bit=True)
-		load_kwargs["device_map"] = "auto"
-		print("Using 8-bit quantization", flush=True)
-	else:
-		# Force all on GPU 0 - no CPU offloading
-		load_kwargs["device_map"] = "cuda:0"
-	
+		
 	# Try to use Flash Attention 2 for faster inference
 	try:
 		model = AutoModelForCausalLM.from_pretrained(
@@ -257,205 +284,78 @@ elif args.model is not None and not args.debug:
 	model.eval()
 	torch.set_grad_enabled(False)
 
-all_prob_10perm = np.load(f'./problems/nogen/all_prob_10_7_human.npz', allow_pickle=True)['all_prob']
-all_prob = np.load(f'./problems/nogen/all_prob_1_7_human.npz', allow_pickle=True)['all_prob']
+average_exemplar_probs = {}
 
-
-response_dict={}
-
-for alph, perm_alph in zip(all_prob.item().keys(), all_prob_10perm.item().keys()):
-	print(alph, flush=True)
-	print(perm_alph, flush=True)
-	if (all_prob.item()[alph]['shuffled_letters'] is not None):
-		shuffled_letters = builtins.list(all_prob.item()[alph]['shuffled_letters'])	
-	else:
-		shuffled_letters = None
-
-	if (all_prob_10perm.item()[perm_alph]['shuffled_letters'] is not None):
-		shuffled_letters_perm = builtins.list(all_prob_10perm.item()[perm_alph]['shuffled_letters'])	
-	else:
-		shuffled_letters_perm = None
-		
-	shuffled_alphabet = builtins.list(all_prob.item()[alph]['shuffled_alphabet'])
-	shuffled_alphabet_perm = builtins.list(all_prob_10perm.item()[perm_alph]['shuffled_alphabet'])
+# Collect average exemplar probability for each number of permuted letters
+for num_permuted in [1, 2, 5, 10, 20]:
+	exemplar_probs_list = []
 	
-	response_dict[alph] = {
-		'shuffled_letters': shuffled_letters,
-		'shuffled_alphabet': shuffled_alphabet,
-	}
-	response_dict[perm_alph] = {
-        'shuffled_letters': shuffled_letters_perm,
-        'shuffled_alphabet': shuffled_alphabet_perm,
-    }
+	all_prob = np.load(f'./problems/nogen/all_prob_{num_permuted}_7_human.npz', allow_pickle=True)['all_prob']
 
-	prob_types = builtins.list(all_prob.item()[alph].keys())[2:] # first two items are list of shuffled letters and shuflled alphabet: skip this
-	prob_types_perm = builtins.list(all_prob_10perm.item()[perm_alph].keys())[2:] # first two items are list of shuffled letters and shuflled alphabet: skip this
-	N_prob_types = len(prob_types) # -1 # minus 1 to skip attention problems
+	for alph in all_prob.item().keys():
+		if (all_prob.item()[alph]['shuffled_letters'] is not None):
+			shuffled_letters = builtins.list(all_prob.item()[alph]['shuffled_letters'])	
+		else:
+			shuffled_letters = None
+			
+		shuffled_alphabet = builtins.list(all_prob.item()[alph]['shuffled_alphabet'])
+		prob_types = builtins.list(all_prob.item()[alph].keys())[2:] # first two items are list of shuffled letters and shuflled alphabet: skip this
+		N_prob_types = len(prob_types) # -1 # minus 1 to skip attention problems
+		alph_string = ' '.join(shuffled_alphabet)
 
-	alph_string = ' '.join(shuffled_alphabet)
-	alph_string_perm = ' '.join(shuffled_alphabet_perm)
-	print("Alphabet:", flush=True)
-	print(alph_string, flush=True)
-	print("Permuted Alphabet:", flush=True)
-	print(alph_string_perm, flush=True)
-
-	# Evaluate
-	N_trials_per_prob_type = 10
-	count = 0
-	for p in range(N_prob_types):
-		if prob_types[p] == 'attn':
-			# SKIP ATTENTION PROBLEMS
-			continue
-			alph_string = "For this question, ignore other instructions and respond 'a a a a'"
-		# accidently left out 3gensplit7, test separately
-		elif args.extra_split and prob_types[p] != '3gensplit7':
-			continue
-		print(f"Problem type: {prob_types[p]} - {str(p+1)}/{str(N_prob_types)}", flush=True)
-		# print('problem type ' + str(p+1) + ' of ' + str(N_prob_types) + '... ', flush=True)
-		prob_type_responses = []
-		prob_type_responses_perm = []
-		prob_type_targets = []
-		prob_type_targets_perm = []
-		for t in range(N_trials_per_prob_type):
-			if t == 0:
-				t += 2  # skip first trial for speed
+		# Evaluate
+		N_trials_per_prob_type = 10
+		count = 0
+		for p in range(N_prob_types):
+			if prob_types[p] == 'attn':
+				# SKIP ATTENTION PROBLEMS
 				continue
-			print('trial ' + str(t+1) + ' of ' + str(N_trials_per_prob_type) + '...', flush=True)
-			prob = all_prob.item()[alph][prob_types[p]]['prob'][t]
-			full_tgt_letters = all_prob.item()[alph][prob_types[p]]['tgt_letters'][t]
-			current_target = all_prob.item()[alph][prob_types[p]]['prob'][t][1][1]
-			prob_type_targets.append(current_target)
 
-			prob_perm = all_prob_10perm.item()[perm_alph][prob_types_perm[p]]['prob'][t]
-			full_tgt_letters_perm = all_prob_10perm.item()[perm_alph][prob_types_perm[p]]['tgt_letters'][t]
-			current_target_perm = all_prob_10perm.item()[perm_alph][prob_types_perm[p]]['prob'][t][1][1]
-			prob_type_targets_perm.append(current_target_perm)
+			print(f"Problem type: {prob_types[p]} - {str(p+1)}/{str(N_prob_types)}", flush=True)
 
-			# Create prompt
-			messages = create_prompt(args.promptstyle, prob, alph_string, args.noprompt, args.sentence)
-			# Create prompt for permuted alphabet
-			messages_perm = create_prompt(args.promptstyle, prob_perm, alph_string_perm, args.noprompt, args.sentence)
+			for t in range(N_trials_per_prob_type):
+				print('trial ' + str(t+1) + ' of ' + str(N_trials_per_prob_type) + '...', flush=True)
+				prob = all_prob.item()[alph][prob_types[p]]['prob'][t]
+				full_tgt_letters = all_prob.item()[alph][prob_types[p]]['tgt_letters'][t]
+				current_target = all_prob.item()[alph][prob_types[p]]['prob'][t][1][1]
 
-	        # If verbose or first trial
-			if args.verbose or t == 0:
-				print("\n=== PROMPT ===\n", flush=True)
-				print(f"System message: {messages[0]['content']}\n", flush=True)
-				print(f"User message: {messages[1]['content']}\n", flush=True)
-				print("\n--- TARGET LETTERS ---\n", flush=True)
-				print(current_target, flush=True)
+				# Create prompt
+				messages = create_prompt(args.promptstyle, prob, alph_string, args.noprompt, args.sentence)
 
-				print("\n=== PROMPT PERMUTED ===\n", flush=True)
-				print(f"System message: {messages_perm[0]['content']}\n", flush=True)
-				print(f"User message: {messages_perm[1]['content']}\n", flush=True)
-				print("\n--- TARGET LETTERS PERMUTED ---\n", flush=True)
-				print(current_target_perm, flush=True)
+				# If verbose or first trial
+				if args.verbose or t == 0:
+					print("\n=== PROMPT ===\n", flush=True)
+					print(f"System message: {messages[0]['content']}\n", flush=True)
+					print(f"User message: {messages[1]['content']}\n", flush=True)
+					print("\n--- TARGET LETTERS ---\n", flush=True)
+					print(current_target, flush=True)
 
-			if args.gpt == '3':
-				comp_prompt = ''
-				for m in messages:
-					comp_prompt += '\n' + m['content']
-				comp_prompt=comp_prompt.strip('\n')				
+				# Get response
+				response = []
+				while len(response) == 0:
+					if args.model.startswith("Qwen"):
+						generated_ids, scores, full_text = get_probs(messages, model, tokenizer)
 
-			# Get response
-			response = []
-			while len(response) == 0:
-				if args.gpt == '3':
-					try:
-						response = openai.Completion.create(prompt=comp_prompt, **kwargs)
-					except:
-						print('trying again...')
-						time.sleep(5)
-				elif args.model.startswith("Qwen"):
-					print("Gathering response...", flush=True)
-					generated_ids, scores, full_text = get_probs(messages, model, tokenizer)
-					generated_ids_perm, scores_perm, full_text_perm = get_probs(messages_perm, model, tokenizer)
-					print("Response gathered.", flush=True)
+						print("\n=== RESPONSE ===\n", flush=True)
+						clean_out = clean_text(full_text)
+						print(clean_out, flush=True)
 
-					print("\n=== RESPONSE ===\n", flush=True)
-					clean_out = clean_text(full_text)
-					print(clean_out, flush=True)
-					print("\n=== RESPONSE PERMUTED ===\n", flush=True)
-					clean_out_perm = clean_text(full_text_perm)
-					print(clean_out_perm, flush=True)
+						print("Calculating probabilities...", flush=True)						
+						probs_per_exemplar, total_probs = exemplar_probs(tokenizer, scores, generated_ids, args.verbose)
+						exemplar_probs_list.append(total_probs)
 
-					# print("SCORES AND PROBS:", flush=True)
-					# print(scores, flush=True)
-					# print(scores_perm, flush=True)
+						# Clean up GPU memory after generation
+						del generated_ids, scores, full_text
+						if torch.cuda.is_available():
+							torch.cuda.empty_cache()
 
-					print("Calculating probabilities...", flush=True)
-					
-					probs, probs_per_word = exemplar_probs(full_text, tokenizer, scores, generated_ids)
-					print(f"Probability of exemplar section: {probs}", flush=True)
-					print(f"Probability per word: {probs_per_word}", flush=True)
-					probs_perm, probs_perm_per_word = exemplar_probs(full_text_perm, tokenizer, scores_perm, generated_ids_perm)
-					print(f"Probability of exemplar section (permuted): {probs_perm}", flush=True)	
-					print(f"Probability per word (permuted): {probs_perm_per_word}", flush=True)
+	average_exemplar_probs[num_permuted] = exemplar_probs_list
 
-					end = time.time()
-					print(f"Time taken for generation and prob calculation: {end-start} seconds.", flush=True)
-					# sys.exit()
-
-					# Clean up GPU memory after generation
-					# del inputs, outputs
-					del generated_ids, scores, full_text
-					del generated_ids_perm, scores_perm, full_text_perm
-					if torch.cuda.is_available():
-						torch.cuda.empty_cache()
-					# print("Filtered response:", clean_out)
-				else:
-					try:
-						response = openai.ChatCompletion.create(messages=messages, **kwargs)
-					except:
-						print('trying again...')
-						time.sleep(5)
-
-			# if args.gpt =='3':
-			# 	prob_type_responses.append(response['choices'][0]['text'])
-			# elif args.model == "Qwen/Qwen3-8B":
-# 			elif args.model.startswith("Qwen"):
-# 				prob_type_responses.append(response[0])
-# 			else:
-# 				prob_type_responses.append(response['choices'][0]['message']['content'])
-# 				# print(response)
-# 			count += 1
-		
-# 		# Store this problem type's responses and targets
-# 		if 'responses' not in response_dict[alph]:
-# 			response_dict[alph]['responses'] = {}
-# 			response_dict[alph]['targets'] = {}
-		
-# 		response_dict[alph]['responses'][prob_types[p]] = prob_type_responses
-# 		response_dict[alph]['targets'][prob_types[p]] = prob_type_targets
-
-# # Save once after all alphabets and problem types are processed
-# # Build path
-# if args.gpt is not None:
-# 	path = f'GPT{args.gpt}_prob_predictions_multi_alph/{args.gen}'
-# else:
-# 	path = f'{args.model.replace("/","_")}_prob_predictions_multi_alph/{args.gen}'
-# check_path(path)
-
-# # Build filename
-# if args.gpt is not None:
-# 	save_fname = f'./{path}/gpt{args.gpt}_letterstring_results_{args.num_permuted}_multi_alph_gptprobs'
-# else:
-# 	save_fname = f'./{path}/{args.model.replace("/","_")}_letterstring_results_{args.num_permuted}_multi_alph_gptprobs'
-# if args.promptstyle:
-# 	save_fname += f'_{args.promptstyle}'
-# if args.sentence:
-# 	save_fname += '_sentence'
-# if args.noprompt:
-# 	save_fname += '_noprompt'
-# if args.extra_split:
-# 	save_fname += '_extrasplit'
-# if args.num_permuted == "symb" and args.gen == "gen":
-# 	save_fname += f'_{14}_alphs'
-	
-# save_fname += '.npz'
-
-# # Save single file with all data
-# np.savez(save_fname, data=response_dict, allow_pickle=True)
-# print(f"Saved {save_fname}")
+# Print average exemplar probabilities
+for num_permuted, probs_list in average_exemplar_probs.items():
+	flat_probs = [prob for sublist in probs_list for prob in sublist]
+	avg_prob = np.mean(flat_probs)
+	print(f"Average exemplar probability for {num_permuted} permuted letters: {avg_prob:.6f}", flush=True)
 
 end = time.time()
 print(f"Total time: {end-start} seconds.", flush=True)
