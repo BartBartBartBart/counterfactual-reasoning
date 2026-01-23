@@ -15,6 +15,7 @@ start = time.time()
 parser = argparse.ArgumentParser()
 parser.add_argument('--promptstyle', help='Give a prompt style: human, minimal, hw, webb, webbplus')
 parser.add_argument('--model', help='give model name', default=None)
+parser.add_argument('--gen', help='gen or nogen', default='nogen')
 parser.add_argument('--verbose', action='store_true', help="Print verbose output.")
 parser.add_argument('--debug', action='store_true', help="Debug mode - do not load large models")
 args = parser.parse_args()
@@ -215,7 +216,7 @@ if args.promptstyle == "webb" and int(args.num_permuted) >1:
 	sys.exit()
 	
 # Load Qwen3  
-elif args.model is not None and not args.debug:
+if args.model is not None and not args.debug:
 	print(f"Loading model {args.model}...")
 	MAX_NEW_TOKENS = 128  # Reduced from 256 - letterstring answers are short
 
@@ -263,13 +264,24 @@ elif args.model is not None and not args.debug:
 	model.eval()
 	torch.set_grad_enabled(False)
 
-average_exemplar_probs = {}
+if args.gen == "nogen":
+	average_exemplar_probs = {}
+else:
+	average_exemplar_probs_1gen = {}
+	average_exemplar_probs_2gen = {}
+	average_exemplar_probs_3gen = {}
 
 # Collect average exemplar probability for each number of permuted letters
 for num_permuted in [1, 2, 5, 10, 20]:
-	exemplar_probs_list = []
 	
-	all_prob = np.load(f'./problems/nogen/all_prob_{num_permuted}_7_human.npz', allow_pickle=True)['all_prob']
+	if args.gen == "nogen": 
+		all_prob = np.load(f'./problems/nogen/all_prob_{num_permuted}_7_human.npz', allow_pickle=True)['all_prob']
+		exemplar_probs_list = []
+	else:
+		all_prob = np.load(f'./problems/gen/all_prob_{num_permuted}_7_gpt_human_alphs.npz', allow_pickle=True)['all_prob']
+		exemplar_probs_list_1gen = []
+		exemplar_probs_list_2gen = []
+		exemplar_probs_list_3gen = [] 
 
 	for alph in all_prob.item().keys():
 		print(alph, flush=True)
@@ -323,22 +335,55 @@ for num_permuted in [1, 2, 5, 10, 20]:
 					if args.verbose or t == 0:
 						print("Calculating probabilities...", flush=True)						
 					probs_per_exemplar, total_probs = exemplar_probs(tokenizer, scores, generated_ids, args.verbose)
-					# exemplar_probs_list.append(total_probs)
-					exemplar_probs_list.extend(total_probs)
+
+					if args.gen == "nogen":
+						exemplar_probs_list.extend(total_probs)
+					elif prob_types[p].startswith("2gen"):
+						exemplar_probs_list_2gen.extend(total_probs)
+					elif prob_types[p].startswith("3gen"):
+						exemplar_probs_list_3gen.extend(total_probs)
+					else:
+						exemplar_probs_list_1gen.extend(total_probs)
 
 					# Clean up GPU memory after generation
 					del generated_ids, scores, full_text
 					if torch.cuda.is_available():
 						torch.cuda.empty_cache()
 
-	average_exemplar_probs[num_permuted] = exemplar_probs_list
-	print(f"Completed exemplar probabilities for {num_permuted} permuted letters.", flush=True)
-	print(f"Average exemplar probability: {np.mean(exemplar_probs_list):.6f}", flush=True)
+	if args.gen == "nogen":
+		average_exemplar_probs[num_permuted] = exemplar_probs_list
+		print(f"Completed exemplar probabilities for {num_permuted} permuted letters.", flush=True)
+		print(f"Average exemplar probability: {np.mean(exemplar_probs_list):.6f}", flush=True)
+	else:
+		average_exemplar_probs_1gen[num_permuted] = exemplar_probs_list_1gen
+		average_exemplar_probs_2gen[num_permuted] = exemplar_probs_list_2gen
+		average_exemplar_probs_3gen[num_permuted] = exemplar_probs_list_3gen
+		print(f"Completed exemplar probabilities for {num_permuted} permuted letters.", flush=True)
+		print(f"1gen Average exemplar probability: {np.mean(exemplar_probs_list_1gen):.6f}", flush=True)
+		print(f"2gen Average exemplar probability: {np.mean(exemplar_probs_list_2gen):.6f}", flush=True)
+		print(f"3gen Average exemplar probability: {np.mean(exemplar_probs_list_3gen):.6f}", flush=True)
 
-# Print average exemplar probabilities
-for num_permuted, probs_list in average_exemplar_probs.items():
-	avg_prob = np.mean(probs_list)
-	print(f"Num permuted letters: {num_permuted}, Average exemplar probability: {avg_prob:.6f}", flush=True)
+if args.gen == "nogen":
+	for num_permuted, probs_list in average_exemplar_probs.items():
+		print(f"\nResults for {num_permuted} permuted letters:", flush=True)
+		print(f"All exemplar probabilities: {probs_list}", flush=True)
+		avg_prob = np.mean(probs_list)
+		print(f"Num permuted letters: {num_permuted}, Average exemplar probability: {avg_prob:.6f}", flush=True)
+else:
+	for num_permuted in average_exemplar_probs_1gen.keys():
+		print(f"\nResults for {num_permuted} permuted letters:", flush=True)
+		probs_list_1gen = average_exemplar_probs_1gen[num_permuted]
+		probs_list_2gen = average_exemplar_probs_2gen[num_permuted]
+		probs_list_3gen = average_exemplar_probs_3gen[num_permuted]
+		print(f"1gen All exemplar probabilities: {probs_list_1gen}", flush=True)
+		print(f"2gen All exemplar probabilities: {probs_list_2gen}", flush=True)
+		print(f"3gen All exemplar probabilities: {probs_list_3gen}", flush=True)
+		avg_prob_1gen = np.mean(probs_list_1gen)
+		avg_prob_2gen = np.mean(probs_list_2gen)
+		avg_prob_3gen = np.mean(probs_list_3gen)
+		print(f"Num permuted letters: {num_permuted}, 1gen Average exemplar probability: {avg_prob_1gen:.6f}", flush=True)
+		print(f"Num permuted letters: {num_permuted}, 2gen Average exemplar probability: {avg_prob_2gen:.6f}", flush=True)
+		print(f"Num permuted letters: {num_permuted}, 3gen Average exemplar probability: {avg_prob_3gen:.6f}", flush=True)
 
 end = time.time()
 print(f"Total time: {end-start} seconds.", flush=True)
