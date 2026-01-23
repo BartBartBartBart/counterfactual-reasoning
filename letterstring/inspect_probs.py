@@ -310,24 +310,24 @@ for num_permuted in [1, 2, 5, 10, 20]:
 					print(current_target, flush=True)
 
 				# Get response
-				response = []
-				while len(response) == 0:
-					if args.model.startswith("Qwen"):
-						generated_ids, scores, full_text = get_probs(messages, model, tokenizer)
+				if args.model.startswith("Qwen"):
+					generated_ids, scores, full_text = get_probs(messages, model, tokenizer)
 
+					if args.verbose or t == 0:
 						print("\n=== RESPONSE ===\n", flush=True)
 						clean_out = clean_text(full_text)
 						print(clean_out, flush=True)
 
+					if args.verbose or t == 0:
 						print("Calculating probabilities...", flush=True)						
-						probs_per_exemplar, total_probs = exemplar_probs(tokenizer, scores, generated_ids, args.verbose)
-						# exemplar_probs_list.append(total_probs)
-						exemplar_probs_list.extend(total_probs)
+					probs_per_exemplar, total_probs = exemplar_probs(tokenizer, scores, generated_ids, args.verbose)
+					# exemplar_probs_list.append(total_probs)
+					exemplar_probs_list.extend(total_probs)
 
-						# Clean up GPU memory after generation
-						del generated_ids, scores, full_text
-						if torch.cuda.is_available():
-							torch.cuda.empty_cache()
+					# Clean up GPU memory after generation
+					del generated_ids, scores, full_text
+					if torch.cuda.is_available():
+						torch.cuda.empty_cache()
 
 	average_exemplar_probs[num_permuted] = exemplar_probs_list
 	print(f"Completed exemplar probabilities for {num_permuted} permuted letters.", flush=True)
