@@ -37,68 +37,47 @@ def clean_text(text: str) -> str:
         text = text[1:-1].strip()
     return text
 
-def create_prompt(promptstyle, prob, alph_string, noprompt, sentence):
+def create_prompt(promptstyle, prob, alph_string):
 	prompt=''
-	if not noprompt:
-		if promptstyle not in ["minimal", "hw", "webb","webbplus", "analogical"]:			
-			prompt+='Use the following alphabet to guess the missing piece.\n\n' \
-				+ alph_string \
-				+ '\n\nNote that the alphabet may be in an unfamiliar order. Complete the pattern using this order.\n\n'
-		elif promptstyle == 'minimal':			
-			prompt+='Use the following alphabet to complete the pattern.\n\n' \
-				+ alph_string \
-				+ '\n\nNote that the alphabet may be in an unfamiliar order. Complete the pattern using this order. Answer with only the final answer and nothing else. Put your final answer between double brackets.\n\n'
-		elif promptstyle == 'hw':			
-			prompt+='Use this fictional alphabet: \n\n' \
-				+ alph_string \
-				+ "\n\nLet's try to complete the pattern:\n\n"
-		elif promptstyle == "webb":
-			prompt += "Let's try to complete the pattern:\n\n"
-		elif promptstyle == "webbplus":
-			prompt += "Let's try to complete the pattern. Just give the letters that complete the pattern and nothing else at all. Do not describe the pattern.\n\n"
-		elif promptstyle == "analogical":
-			prompt += "Use the following alphabet to complete the pattern.\n\n"
-			prompt += alph_string \
-				+ '\n\nFirst, describe 3 relevant exemplars that are distinct from this problem, then give the final answer. Answer with only the examples and the final answer with no further explanation. Put your final answer between double brackets. Note that the alphabet may be in an unfamiliar order. Complete the pattern using this order.\n\n'
-	if sentence:
-		prompt += 'If '
-		for i in range(len(prob[0][0])):
-			prompt += str(prob[0][0][i])
-			if i < len(prob[0][0]) - 1:
-				prompt += ' '
-		prompt += ' changes to '
-		for i in range(len(prob[0][1])):
-			prompt += str(prob[0][1][i])
-			if i < len(prob[0][1]) - 1:
-				prompt += ' '
-		prompt += ', then '
-		for i in range(len(prob[1][0])):
-			prompt += str(prob[1][0][i])
-			if i < len(prob[1][0]) - 1:
-				prompt += ' '
-		prompt += ' should change to '
-	else:
-		prompt += '['
-		for i in range(len(prob[0][0])):
-			prompt += str(prob[0][0][i])
-			if i < len(prob[0][0]) - 1:
-				prompt += ' '
+	if promptstyle not in ["minimal", "hw", "webb","webbplus", "analogical"]:			
+		prompt+='Use the following alphabet to guess the missing piece.\n\n' \
+			+ alph_string \
+			+ '\n\nNote that the alphabet may be in an unfamiliar order. Complete the pattern using this order.\n\n'
+	elif promptstyle == 'minimal':			
+		prompt+='Use the following alphabet to complete the pattern.\n\n' \
+			+ alph_string \
+			+ '\n\nNote that the alphabet may be in an unfamiliar order. Complete the pattern using this order. Answer with only the final answer and nothing else. Put your final answer between double brackets.\n\n'
+	elif promptstyle == 'hw':			
+		prompt+='Use this fictional alphabet: \n\n' \
+			+ alph_string \
+			+ "\n\nLet's try to complete the pattern:\n\n"
+	elif promptstyle == "webb":
+		prompt += "Let's try to complete the pattern:\n\n"
+	elif promptstyle == "webbplus":
+		prompt += "Let's try to complete the pattern. Just give the letters that complete the pattern and nothing else at all. Do not describe the pattern.\n\n"
+	elif promptstyle == "analogical":
+		prompt += "Use the following alphabet to complete the pattern.\n\n"
+		prompt += alph_string \
+			+ '\n\nFirst, describe 3 relevant exemplars that are distinct from this problem, then give the final answer. Answer with only the examples and the final answer with no further explanation. Put your final answer between double brackets. Note that the alphabet may be in an unfamiliar order. Complete the pattern using this order.\n\n'
+	prompt += '['
+	for i in range(len(prob[0][0])):
+		prompt += str(prob[0][0][i])
+		if i < len(prob[0][0]) - 1:
+			prompt += ' '
+	prompt += '] ['
+	for i in range(len(prob[0][1])):
+		prompt += str(prob[0][1][i])
+		if i < len(prob[0][1]) - 1:
+			prompt += ' '
+	prompt += ']\n['
+	for i in range(len(prob[1][0])):
+		prompt += str(prob[1][0][i])
+		if i < len(prob[1][0]) - 1:
+			prompt += ' '
+	if promptstyle in ["minimal", "hw", "webb","webbplus", "analogical"]:
 		prompt += '] ['
-		for i in range(len(prob[0][1])):
-			prompt += str(prob[0][1][i])
-			if i < len(prob[0][1]) - 1:
-				prompt += ' '
-		prompt += ']\n['
-		for i in range(len(prob[1][0])):
-			prompt += str(prob[1][0][i])
-			if i < len(prob[1][0]) - 1:
-				prompt += ' '
-		if promptstyle in ["minimal", "hw", "webb","webbplus", "analogical"]:
-			prompt += '] ['
-		else:
-			prompt += '] [ ? ]'
-		# if args.promptstyle == "analogical":
-		# 	prompt += '\n\nFirst, describe 3 relevant exemplars that are distinct from this problem. Then give the final answer. Answer with only the examples and the final answer with no further explanation. Put your final answer between double brackets.\n'
+	else:
+		prompt += '] [ ? ]'
 	if promptstyle == "human":
 		messages = [{'role': 'system', 'content':'You are able to solve letter-string analogies'},
 						{'role': 'user', 'content': "In this study, you will be presented with a series of patterns involving alphanumeric characters, together with an example alphabet.\n\n" +
@@ -320,7 +299,7 @@ for num_permuted in [1, 2, 5, 10, 20]:
 				current_target = all_prob.item()[alph][prob_types[p]]['prob'][t][1][1]
 
 				# Create prompt
-				messages = create_prompt(args.promptstyle, prob, alph_string, args.noprompt, args.sentence)
+				messages = create_prompt(args.promptstyle, prob, alph_string)
 
 				# If verbose or first trial
 				if args.verbose or t == 0:
