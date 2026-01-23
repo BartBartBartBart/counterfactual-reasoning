@@ -17,11 +17,13 @@ def extract_answer(response):
     """
     response = response.lower()
 
-    if 'answer:' in response:
-        answer = response.split('answer:')[1]
+    if 'answer' in response:
+        answer = response.split('answer')[1]
+        # print("split onormap" in response:
+        answer = response.split('answer')[1]
         # print("split on final answer")
-    elif 'conclusion:' in response:
-        answer = response.split('conclusion:')[1]
+    elif 'conclusion' in response:
+        answer = response.split('conclusion')[1]
         # print("split on conclusion")
     else:
         answer = response
