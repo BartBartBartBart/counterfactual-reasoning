@@ -294,7 +294,7 @@ elif args.symb_avg:
 
     print(f"\n=== Summary of Accuracies for Symbolic Alphabet ===\n")
     for gen in acc_dict:
-        print(f"--- Generation: {gen} ---")
+        print(f"--- Generation: {'0-gen' if gen == 'nogen' else '1-gen'} ---")
         gen_accuracies = acc_dict[gen]
         avg = 0
         for alph, acc in gen_accuracies.items():
