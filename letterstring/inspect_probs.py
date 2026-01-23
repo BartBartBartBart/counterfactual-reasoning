@@ -342,7 +342,8 @@ for num_permuted in [1, 2, 5, 10, 20]:
 
 						print("Calculating probabilities...", flush=True)						
 						probs_per_exemplar, total_probs = exemplar_probs(tokenizer, scores, generated_ids, args.verbose)
-						exemplar_probs_list.append(total_probs)
+						# exemplar_probs_list.append(total_probs)
+						exemplar_probs_list.extend(total_probs)
 
 						# Clean up GPU memory after generation
 						del generated_ids, scores, full_text
@@ -350,12 +351,13 @@ for num_permuted in [1, 2, 5, 10, 20]:
 							torch.cuda.empty_cache()
 
 	average_exemplar_probs[num_permuted] = exemplar_probs_list
+	print(f"Completed exemplar probabilities for {num_permuted} permuted letters.", flush=True)
+	print(f"Average exemplar probability: {np.mean(exemplar_probs_list):.6f}", flush=True)
 
 # Print average exemplar probabilities
 for num_permuted, probs_list in average_exemplar_probs.items():
-	flat_probs = [prob for sublist in probs_list for prob in sublist]
-	avg_prob = np.mean(flat_probs)
-	print(f"Average exemplar probability for {num_permuted} permuted letters: {avg_prob:.6f}", flush=True)
+	avg_prob = np.mean(probs_list)
+	print(f"Num permuted letters: {num_permuted}, Average exemplar probability: {avg_prob:.6f}", flush=True)
 
 end = time.time()
 print(f"Total time: {end-start} seconds.", flush=True)
