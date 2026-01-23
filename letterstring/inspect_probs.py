@@ -272,6 +272,8 @@ for num_permuted in [1, 2, 5, 10, 20]:
 	all_prob = np.load(f'./problems/nogen/all_prob_{num_permuted}_7_human.npz', allow_pickle=True)['all_prob']
 
 	for alph in all_prob.item().keys():
+		print(alph, flush=True)
+
 		if (all_prob.item()[alph]['shuffled_letters'] is not None):
 			shuffled_letters = builtins.list(all_prob.item()[alph]['shuffled_letters'])	
 		else:
