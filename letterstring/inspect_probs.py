@@ -337,7 +337,7 @@ average_exemplar_probs = {gen: {'correct': [], 'incorrect': [], 'total': []} for
 average_final_answer_probs = {gen: {'correct': [], 'incorrect': [], 'total': []} for gen in gen_types}
 
 # Collect average exemplar probability for each number of permuted letters
-for num_permuted in [1]: # 2, 5, 10, 20]:
+for num_permuted in [1, 2, 5, 10, 20]:
 	# Initialize lists for this num_permuted
 	exemplar_probs_list = {gen: {'correct': [], 'incorrect': [], 'total': []} for gen in gen_types}
 	final_answer_probs = {gen: {'correct': [], 'incorrect': [], 'total': []} for gen in gen_types}
@@ -361,7 +361,7 @@ for num_permuted in [1]: # 2, 5, 10, 20]:
 		alph_string = ' '.join(shuffled_alphabet)
 
 		# Evaluate
-		N_trials_per_prob_type = 2 # 10
+		N_trials_per_prob_type = 10
 		count = 0
 		for p in range(N_prob_types):
 			if prob_types[p] == 'attn':
