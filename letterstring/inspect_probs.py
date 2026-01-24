@@ -337,7 +337,7 @@ average_exemplar_probs = {gen: {'correct': [], 'incorrect': [], 'total': []} for
 average_final_answer_probs = {gen: {'correct': [], 'incorrect': [], 'total': []} for gen in gen_types}
 
 # Collect average exemplar probability for each number of permuted letters
-for num_permuted in [1]:
+for num_permuted in [1]: # 2, 5, 10, 20]:
 	# Initialize lists for this num_permuted
 	exemplar_probs_list = {gen: {'correct': [], 'incorrect': [], 'total': []} for gen in gen_types}
 	final_answer_probs = {gen: {'correct': [], 'incorrect': [], 'total': []} for gen in gen_types}
@@ -361,7 +361,7 @@ for num_permuted in [1]:
 		alph_string = ' '.join(shuffled_alphabet)
 
 		# Evaluate
-		N_trials_per_prob_type = 10
+		N_trials_per_prob_type = 2 # 10
 		count = 0
 		for p in range(N_prob_types):
 			if prob_types[p] == 'attn':
@@ -416,7 +416,7 @@ for num_permuted in [1]:
 					if args.verbose:
 						print(f'Pred: {pred}, True: {true}')
 					if pred == true:
-						correct += 1
+						correct = True
 					elif true in pred:
 						correct = check_partly_correct(true, pred)
 					else:
@@ -435,21 +435,16 @@ for num_permuted in [1]:
 
 					if correct: 
 						exemplar_probs_list[gen_key]['correct'].extend(total_probs)
-						final_answer_probs[gen_key]['correct'].append(final_answer_prob)
-					else:
-						exemplar_probs_list[gen_key]['incorrect'].extend(total_probs)
-						final_answer_probs[gen_key]['incorrect'].append(final_answer_prob)
-					# Also store total
-					exemplar_probs_list[gen_key]['total'].extend(total_probs)
-
 					if final_answer_prob is not None:
-						if correct:
-							final_answer_probs[gen_key]['total'].append(final_answer_prob)
-						else:
-							final_answer_probs[gen_key]['total'].append(final_answer_prob)
-						# Also store total
-						final_answer_probs[gen_key]['total'].append(final_answer_prob)
-
+						final_answer_probs[gen_key]['correct'].append(final_answer_prob)
+				else:
+					exemplar_probs_list[gen_key]['incorrect'].extend(total_probs)
+					if final_answer_prob is not None:
+						final_answer_probs[gen_key]['incorrect'].append(final_answer_prob)
+				
+				# Also store total
+				exemplar_probs_list[gen_key]['total'].extend(total_probs)
+				if final_answer_prob is not None:
 					# Clean up GPU memory after generation
 					del generated_ids, scores, full_text
 					if torch.cuda.is_available():
