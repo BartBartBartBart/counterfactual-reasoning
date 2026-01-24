@@ -435,20 +435,21 @@ for num_permuted in [1]: # 2, 5, 10, 20]:
 
 					if correct: 
 						exemplar_probs_list[gen_key]['correct'].extend(total_probs)
+						if final_answer_prob is not None:
+							final_answer_probs[gen_key]['correct'].append(final_answer_prob)
+					else:
+						exemplar_probs_list[gen_key]['incorrect'].extend(total_probs)
+						if final_answer_prob is not None:
+							final_answer_probs[gen_key]['incorrect'].append(final_answer_prob)
+					
+					# Also store total
+					exemplar_probs_list[gen_key]['total'].extend(total_probs)
 					if final_answer_prob is not None:
-						final_answer_probs[gen_key]['correct'].append(final_answer_prob)
-				else:
-					exemplar_probs_list[gen_key]['incorrect'].extend(total_probs)
-					if final_answer_prob is not None:
-						final_answer_probs[gen_key]['incorrect'].append(final_answer_prob)
-				
-				# Also store total
-				exemplar_probs_list[gen_key]['total'].extend(total_probs)
-				if final_answer_prob is not None:
-					# Clean up GPU memory after generation
-					del generated_ids, scores, full_text
-					if torch.cuda.is_available():
-						torch.cuda.empty_cache()
+						final_answer_probs[gen_key]['total'].append(final_answer_prob)
+						# Clean up GPU memory after generation
+						del generated_ids, scores, full_text
+						if torch.cuda.is_available():
+							torch.cuda.empty_cache()
 
 	# Store results for this num_permuted
 	for gen in gen_types:
