@@ -38,6 +38,24 @@ def clean_text(text: str) -> str:
         text = text[1:-1].strip()
     return text
 
+def check_partly_correct(true, pred):
+    """
+    Manual check for partly correct predictions (pred != true, but true in pred.)
+    e.g. true = 'abcd', pred = 'abc][abcd' --> correct
+    Returns True if partly correct, False otherwise. 
+    """
+    # if multiple indices, take last one
+    indices = [i for i in range(len(pred)) if pred.startswith(true, i)]
+    index = indices[-1] if len(indices) > 1 else indices[0] if len(indices) == 1 else -1
+    if index != -1:
+        before = pred[index-1] if index > 0 else ' '
+        after = pred[index+len(true)] if index + len(true) < len(pred) else ' '
+        if before in ['['] and after in [' ', ']']:
+            # print(f"partly correct: True: {true}, Pred: {pred}")
+            return True
+        # print(f"Not partly correct due to surrounding chars: True: {true}, Pred: {pred}, before {before}, after {after}")
+    return False
+
 def create_prompt(promptstyle, prob, alph_string):
 	prompt=''
 	if promptstyle not in ["minimal", "hw", "webb","webbplus", "analogical"]:			
@@ -315,14 +333,14 @@ else:
 	problem_dir = "gen"
 
 # Initialize data structures
-average_exemplar_probs = {gen: {} for gen in gen_types}
-average_final_answer_probs = {gen: {} for gen in gen_types}
+average_exemplar_probs = {gen: {'correct': [], 'incorrect': [], 'total': []} for gen in gen_types}
+average_final_answer_probs = {gen: {'correct': [], 'incorrect': [], 'total': []} for gen in gen_types}
 
 # Collect average exemplar probability for each number of permuted letters
-for num_permuted in [1, 2, 5, 10, 20]:
+for num_permuted in [1]:
 	# Initialize lists for this num_permuted
-	exemplar_probs_list = {gen: [] for gen in gen_types}
-	final_answer_probs = {gen: [] for gen in gen_types}
+	exemplar_probs_list = {gen: {'correct': [], 'incorrect': [], 'total': []} for gen in gen_types}
+	final_answer_probs = {gen: {'correct': [], 'incorrect': [], 'total': []} for gen in gen_types}
 	
 	if args.gen == "nogen":
 		all_prob = np.load(f'./problems/nogen/all_prob_{num_permuted}_7_human.npz', allow_pickle=True)['all_prob']
@@ -372,15 +390,37 @@ for num_permuted in [1, 2, 5, 10, 20]:
 				# Get response
 				if args.model.startswith("Qwen"):
 					generated_ids, scores, full_text = get_probs(messages, model, tokenizer)
-
+					pred = clean_text(full_text)
+					
 					if args.verbose or t == 0:
 						print("\n=== RESPONSE ===\n", flush=True)
-						clean_out = clean_text(full_text)
-						print(clean_out, flush=True)
+						print(pred, flush=True)
 					
 					probs_per_exemplar, total_probs = extract_exemplar_probs(tokenizer, scores, generated_ids, args.verbose or t == 0)
 					final_answer_prob = extract_final_answer_prob(tokenizer, scores, generated_ids, args.verbose or t == 0)
 					
+					# Determine correctness
+					# Filter the answer, take only the content inside double brackets [[ answer ]]
+					if '[[' in pred and ']]' in pred:
+						start_idx = pred.index('[[') + 2
+						end_idx = pred.index(']]')
+						pred = pred[start_idx:end_idx].strip()
+						pred = pred.strip(" '").replace(" ", "").lower()
+					else:
+						pred = pred.replace(" ", "").lower()
+					true = full_tgt_letters
+					if type(true[0]) == np.int64:
+						true = [str(x) for x in true]
+					true = ''.join(true).lower()
+					if args.verbose:
+						print(f'Pred: {pred}, True: {true}')
+					if pred == true:
+						correct += 1
+					elif true in pred:
+						correct = check_partly_correct(true, pred)
+					if args.verbose:
+						print(f"Final decision on correctness: {correct}", flush=True)
+
 					if args.gen == "nogen":
 						gen_key = "0gen"
 					elif prob_types[p].startswith("2gen"):
@@ -390,9 +430,22 @@ for num_permuted in [1, 2, 5, 10, 20]:
 					else:
 						gen_key = "1gen"
 
-					exemplar_probs_list[gen_key].extend(total_probs)
+					if correct: 
+						exemplar_probs_list[gen_key]['correct'].extend(total_probs)
+						final_answer_probs[gen_key]['correct'].append(final_answer_prob)
+					else:
+						exemplar_probs_list[gen_key]['incorrect'].extend(total_probs)
+						final_answer_probs[gen_key]['incorrect'].append(final_answer_prob)
+					# Also store total
+					exemplar_probs_list[gen_key]['total'].extend(total_probs)
+
 					if final_answer_prob is not None:
-						final_answer_probs[gen_key].append(final_answer_prob)
+						if correct:
+							final_answer_probs[gen_key]['total'].append(final_answer_prob)
+						else:
+							final_answer_probs[gen_key]['total'].append(final_answer_prob)
+						# Also store total
+						final_answer_probs[gen_key]['total'].append(final_answer_prob)
 
 					# Clean up GPU memory after generation
 					del generated_ids, scores, full_text
@@ -405,25 +458,36 @@ for num_permuted in [1, 2, 5, 10, 20]:
 		average_final_answer_probs[gen][num_permuted] = final_answer_probs[gen]
 		
 		print(f"Completed {gen} exemplar probabilities for {num_permuted} permuted letters.", flush=True)
-		if exemplar_probs_list[gen]:
-			print(f"{gen} Average exemplar probability: {np.mean(exemplar_probs_list[gen]):.6f}", flush=True)
-		if final_answer_probs[gen]:
-			print(f"{gen} Average final answer probability: {np.mean(final_answer_probs[gen]):.6f}", flush=True)
 
 # Print final results
 for gen in gen_types:
-	for num_permuted, probs_list in average_exemplar_probs[gen].items():
-		print(f"\nResults for {gen} with {num_permuted} permuted letters:", flush=True)
-		print(f"All exemplar probabilities: {probs_list}", flush=True)
-		if probs_list:
-			avg_prob = np.mean(probs_list)
-			print(f"Num permuted letters: {num_permuted}, {gen} Average exemplar probability: {avg_prob:.6f}", flush=True)
-		
-		final_probs_list = average_final_answer_probs[gen].get(num_permuted, [])
-		if final_probs_list:
-			print(f"Final answer probabilities: {final_probs_list}", flush=True)
-			avg_final_prob = np.mean(final_probs_list)
-			print(f"Num permuted letters: {num_permuted}, {gen} Average final answer probability: {avg_final_prob:.6f}", flush=True)
+	print(f"\n{'='*60}", flush=True)
+	print(f"Results for {gen}:", flush=True)
+	print(f"{'='*60}", flush=True)
+	
+	for num_permuted in [1, 2, 5, 10, 20]:
+		if num_permuted in average_exemplar_probs[gen]:
+			probs_dict = average_exemplar_probs[gen][num_permuted]
+			
+			print(f"\nNum permuted letters: {num_permuted}", flush=True)
+			print(f"  Exemplar probabilities:", flush=True)
+			
+			for key in ['correct', 'incorrect', 'total']:
+				probs_list = probs_dict[key]
+				if probs_list:
+					avg_prob = np.mean(probs_list)
+					std_prob = np.std(probs_list)
+					print(f"    {key}: {avg_prob:.6f} +- {std_prob:.6f} (n={len(probs_list)})", flush=True)
+			
+			final_probs_dict = average_final_answer_probs[gen][num_permuted]
+			print(f"  Final answer probabilities:", flush=True)
+			
+			for key in ['correct', 'incorrect', 'total']:
+				final_probs_list = final_probs_dict[key]
+				if final_probs_list:
+					avg_final_prob = np.mean(final_probs_list)
+					std_final_prob = np.std(final_probs_list)
+					print(f"    {key}: {avg_final_prob:.6f} +- {std_final_prob:.6f} (n={len(final_probs_list)})", flush=True)
 
 end = time.time()
-print(f"Total time: {end-start} seconds.", flush=True)
+print(f"\nTotal time: {end-start} seconds.", flush=True)
