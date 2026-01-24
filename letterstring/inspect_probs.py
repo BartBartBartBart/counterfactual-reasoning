@@ -408,7 +408,8 @@ for num_permuted in [1]:
 						pred = pred.strip(" '").replace(" ", "").lower()
 					else:
 						pred = pred.replace(" ", "").lower()
-					true = full_tgt_letters
+					# true = full_tgt_letters
+					true = current_target
 					if type(true[0]) == np.int64:
 						true = [str(x) for x in true]
 					true = ''.join(true).lower()
