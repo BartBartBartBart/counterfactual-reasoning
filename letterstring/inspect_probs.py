@@ -418,6 +418,8 @@ for num_permuted in [1]:
 						correct += 1
 					elif true in pred:
 						correct = check_partly_correct(true, pred)
+					else:
+						correct = False
 					if args.verbose:
 						print(f"Final decision on correctness: {correct}", flush=True)
 
