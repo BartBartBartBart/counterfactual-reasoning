@@ -16,6 +16,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--promptstyle', help='Give a prompt style: human, minimal, hw, webb, webbplus')
 parser.add_argument('--model', help='give model name', default=None)
 parser.add_argument('--gen', help='gen or nogen', default='nogen')
+parser.add_argument('--use_saved', action='store_true', help="Use saved responses instead of generating new ones.")
 parser.add_argument('--verbose', action='store_true', help="Print verbose output.")
 parser.add_argument('--debug', action='store_true', help="Debug mode - do not load large models")
 args = parser.parse_args()
@@ -271,12 +272,16 @@ def extract_final_answer_prob(tokenizer, scores, generated_ids, verbose=False):
 	
 	return final_answer_prob
 
+if args.use_saved and (not args.model or not args.promptstyle):
+	print("When using --use_saved, both --model and --promptstyle must be specified.")
+	sys.exit()
+
 if args.promptstyle == "webb" and int(args.num_permuted) >1:
 	print("promptstyle webb can only be used with an unpermuted alphabet")
 	sys.exit()
 	
 # Load Qwen3  
-if args.model is not None and not args.debug:
+if args.model is not None and not args.debug and not args.use_saved:
 	print(f"Loading model {args.model}...")
 	MAX_NEW_TOKENS = 128  # Reduced from 256 - letterstring answers are short
 
@@ -335,9 +340,12 @@ else:
 # Initialize data structures
 average_exemplar_probs = {gen: {'correct': [], 'incorrect': [], 'total': []} for gen in gen_types}
 average_final_answer_probs = {gen: {'correct': [], 'incorrect': [], 'total': []} for gen in gen_types}
+response_dict_all = {} # Stores responses for all problems, together with their scores and generation_ids in npz format
 
 # Collect average exemplar probability for each number of permuted letters
 for num_permuted in [1, 2, 5, 10, 20]:
+	response_dict = {}
+
 	# Initialize lists for this num_permuted
 	exemplar_probs_list = {gen: {'correct': [], 'incorrect': [], 'total': []} for gen in gen_types}
 	final_answer_probs = {gen: {'correct': [], 'incorrect': [], 'total': []} for gen in gen_types}
@@ -356,6 +364,11 @@ for num_permuted in [1, 2, 5, 10, 20]:
 			shuffled_letters = None
 			
 		shuffled_alphabet = builtins.list(all_prob.item()[alph]['shuffled_alphabet'])
+
+		response_dict[alph] = {'shuffled_letters': shuffled_letters,
+							   'shuffled_alphabet': shuffled_alphabet,
+							   'problems': {}}
+
 		prob_types = builtins.list(all_prob.item()[alph].keys())[2:] # first two items are list of shuffled letters and shuflled alphabet: skip this
 		N_prob_types = len(prob_types) # -1 # minus 1 to skip attention problems
 		alph_string = ' '.join(shuffled_alphabet)
@@ -388,15 +401,16 @@ for num_permuted in [1, 2, 5, 10, 20]:
 					print(current_target, flush=True)
 
 				# Get response
-				if args.model.startswith("Qwen"):
+				if args.model.startswith("Qwen") and not args.use_saved:
 					generated_ids, scores, full_text = get_probs(messages, model, tokenizer)
 					pred = clean_text(full_text)
-					
+
 					if args.verbose or t == 0:
 						print("\n=== RESPONSE ===\n", flush=True)
 						print(pred, flush=True)
 					
-					probs_per_exemplar, total_probs = extract_exemplar_probs(tokenizer, scores, generated_ids, args.verbose or t == 0)
+					if args.promptstyle == "analogical":
+						probs_per_exemplar, total_probs = extract_exemplar_probs(tokenizer, scores, generated_ids, args.verbose or t == 0)
 					final_answer_prob = extract_final_answer_prob(tokenizer, scores, generated_ids, args.verbose or t == 0)
 					
 					# Determine correctness
@@ -424,6 +438,18 @@ for num_permuted in [1, 2, 5, 10, 20]:
 					if args.verbose:
 						print(f"Final decision on correctness: {correct}", flush=True)
 
+					response_dict[alph]['problems'][(prob_types[p], t)] = {
+						'prompt': messages,
+						'generated_ids': generated_ids.cpu().numpy(),
+						'scores': [s.cpu().numpy() for s in scores],
+						'full_text': full_text,
+						'predicted_answer': pred,
+						'correct': correct,
+						'exemplar_probs': probs_per_exemplar,
+						'total_exemplar_probs': total_probs,
+						'final_answer_prob': final_answer_prob
+					}
+
 					if args.gen == "nogen":
 						gen_key = "0gen"
 					elif prob_types[p].startswith("2gen"):
@@ -450,6 +476,15 @@ for num_permuted in [1, 2, 5, 10, 20]:
 						del generated_ids, scores, full_text
 						if torch.cuda.is_available():
 							torch.cuda.empty_cache()
+				elif args.use_saved:
+					# Load saved responses
+					saved_filename = f'./saved_responses/responses_{args.promptstyle}_{problem_dir}_{args.model.replace("/", "_")}_responses.npz'
+					if not os.path.exists(saved_filename):
+						print(f"Saved response file {saved_filename} not found.", flush=True)
+						continue
+					saved_data = np.load(saved_filename, allow_pickle=True)
+					print("To be implemented...", flush=True)
+					sys.exit()
 
 	# Store results for this num_permuted
 	for gen in gen_types:
@@ -490,3 +525,8 @@ for gen in gen_types:
 
 end = time.time()
 print(f"\nTotal time: {end-start} seconds.", flush=True)
+
+# Save all responses to npz file
+output_filename = f'./prob_results/probs_{args.promptstyle}_{problem_dir}_{args.model.replace("/", "_")}_responses.npz'
+np.savez_compressed(output_filename, response_dict_all=response_dict_all)
+print(f"All responses saved to {output_filename}", flush=True)
