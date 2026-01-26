@@ -410,7 +410,7 @@ for num_permuted in [1, 2, 5, 10, 20]:
 						print(pred, flush=True)
 					
 					if args.promptstyle == "analogical":
-						probs_per_exemplar, total_probs = extract_exemplar_probs(tokenizer, scores, generated_ids, args.verbose or t == 0)
+						probs_per_exemplar, total_exemplar_probs = extract_exemplar_probs(tokenizer, scores, generated_ids, args.verbose or t == 0)
 					final_answer_prob = extract_final_answer_prob(tokenizer, scores, generated_ids, args.verbose or t == 0)
 					
 					# Determine correctness
@@ -445,10 +445,13 @@ for num_permuted in [1, 2, 5, 10, 20]:
 						'full_text': full_text,
 						'predicted_answer': pred,
 						'correct': correct,
-						'exemplar_probs': probs_per_exemplar,
-						'total_exemplar_probs': total_probs,
 						'final_answer_prob': final_answer_prob
 					}
+
+					if args.promptstyle == "analogical":
+						# Store exemplar probabilities
+						response_dict[alph]['problems'][(prob_types[p], t)]['exemplar_probs'] = probs_per_exemplar
+						response_dict[alph]['problems'][(prob_types[p], t)]['total_exemplar_probs'] = total_exemplar_probs
 
 					if args.gen == "nogen":
 						gen_key = "0gen"
@@ -460,16 +463,19 @@ for num_permuted in [1, 2, 5, 10, 20]:
 						gen_key = "1gen"
 
 					if correct: 
-						exemplar_probs_list[gen_key]['correct'].extend(total_probs)
+						if args.promptstyle == "analogical":
+							exemplar_probs_list[gen_key]['correct'].extend(total_exemplar_probs)
 						if final_answer_prob is not None:
 							final_answer_probs[gen_key]['correct'].append(final_answer_prob)
 					else:
-						exemplar_probs_list[gen_key]['incorrect'].extend(total_probs)
+						if args.promptstyle == "analogical":
+							exemplar_probs_list[gen_key]['incorrect'].extend(total_exemplar_probs)
 						if final_answer_prob is not None:
 							final_answer_probs[gen_key]['incorrect'].append(final_answer_prob)
 					
 					# Also store total
-					exemplar_probs_list[gen_key]['total'].extend(total_probs)
+					if args.promptstyle == "analogical":
+						exemplar_probs_list[gen_key]['total'].extend(total_exemplar_probs)
 					if final_answer_prob is not None:
 						final_answer_probs[gen_key]['total'].append(final_answer_prob)
 						# Clean up GPU memory after generation
@@ -488,10 +494,11 @@ for num_permuted in [1, 2, 5, 10, 20]:
 
 	# Store results for this num_permuted
 	for gen in gen_types:
-		average_exemplar_probs[gen][num_permuted] = exemplar_probs_list[gen]
+		if args.promptstyle == "analogical":
+			average_exemplar_probs[gen][num_permuted] = exemplar_probs_list[gen]
 		average_final_answer_probs[gen][num_permuted] = final_answer_probs[gen]
 		
-		print(f"Completed {gen} exemplar probabilities for {num_permuted} permuted letters.", flush=True)
+		print(f"Completed {gen} probabilities for {num_permuted} permuted letters.", flush=True)
 
 # Print final results
 for gen in gen_types:
@@ -500,18 +507,20 @@ for gen in gen_types:
 	print(f"{'='*60}", flush=True)
 	
 	for num_permuted in [1, 2, 5, 10, 20]:
-		if num_permuted in average_exemplar_probs[gen]:
-			probs_dict = average_exemplar_probs[gen][num_permuted]
+		# if num_permuted in average_exemplar_probs[gen]:
+		if num_permuted in average_final_answer_probs[gen]:
+			if args.promptstyle == "analogical":
+				probs_dict = average_exemplar_probs[gen][num_permuted]
 			
-			print(f"\nNum permuted letters: {num_permuted}", flush=True)
-			print(f"  Exemplar probabilities:", flush=True)
+				print(f"\nNum permuted letters: {num_permuted}", flush=True)
+				print(f"  Exemplar probabilities:", flush=True)
 			
-			for key in ['correct', 'incorrect', 'total']:
-				probs_list = probs_dict[key]
-				if probs_list:
-					avg_prob = np.mean(probs_list)
-					std_prob = np.std(probs_list)
-					print(f"    {key}: {avg_prob:.6f} +- {std_prob:.6f} (n={len(probs_list)})", flush=True)
+				for key in ['correct', 'incorrect', 'total']:
+					probs_list = probs_dict[key]
+					if probs_list:
+						avg_prob = np.mean(probs_list)
+						std_prob = np.std(probs_list)
+						print(f"    {key}: {avg_prob:.6f} +- {std_prob:.6f} (n={len(probs_list)})", flush=True)
 			
 			final_probs_dict = average_final_answer_probs[gen][num_permuted]
 			print(f"  Final answer probabilities:", flush=True)
