@@ -248,7 +248,16 @@ def extract_final_answer_prob(tokenizer, scores, generated_ids, verbose=False):
 	if final_answer_start is None:
 		if verbose:
 			print("No opening double bracket found for final answer\n")
-		return final_answer_prob
+		# Take last open bracket as start
+		for token_idx in range(len(generated_ids)-1, -1, -1):
+			token_text = tokenizer.decode([generated_ids[token_idx]])
+			if "[" in token_text:
+				final_answer_start = token_idx
+				if verbose:
+					print(f"Using last single opening bracket at token index {final_answer_start} as start for final answer\n")
+				break
+		if final_answer_start is None:
+			return final_answer_prob
 	
 	# Search for closing double bracket
 	final_answer_end = None
@@ -261,7 +270,16 @@ def extract_final_answer_prob(tokenizer, scores, generated_ids, verbose=False):
 	if final_answer_end is None:
 		if verbose:
 			print("No closing double bracket found for final answer\n")
-		return final_answer_prob
+		# Take last closing bracket as end
+		for token_idx in range(len(generated_ids)-1, final_answer_start, -1):
+			token_text = tokenizer.decode([generated_ids[token_idx]])
+			if "]" in token_text:
+				final_answer_end = token_idx
+				if verbose:
+					print(f"Using last single closing bracket at token index {final_answer_end} as end for final answer\n")
+				break
+		if final_answer_end is None:
+			return final_answer_prob
 	
 	# Extract token indices between brackets
 	final_answer_token_indices = list(range(final_answer_start, final_answer_end + 1))
