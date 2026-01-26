@@ -525,12 +525,12 @@ for gen in gen_types:
 	print(f"{'='*60}", flush=True)
 	
 	for num_permuted in [1, 2, 5, 10, 20]:
-		# if num_permuted in average_exemplar_probs[gen]:
 		if num_permuted in average_final_answer_probs[gen]:
+			print(f"\nNum permuted letters: {num_permuted}", flush=True)
+
 			if args.promptstyle == "analogical":
 				probs_dict = average_exemplar_probs[gen][num_permuted]
 			
-				print(f"\nNum permuted letters: {num_permuted}", flush=True)
 				print(f"  Exemplar probabilities:", flush=True)
 			
 				for key in ['correct', 'incorrect', 'total']:
