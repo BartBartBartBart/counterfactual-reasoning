@@ -525,7 +525,7 @@ for num_permuted in [1, 2, 5, 10, 20]:
 						scores=scores, 
 						generated_ids=generated_ids,
 						pred=pred,
-						correct_anwer=true,
+						correct_answer=true,
 						verbose=args.verbose or t == 0
 					)
 					if args.verbose or t == 0:
