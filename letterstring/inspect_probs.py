@@ -509,6 +509,9 @@ for num_permuted in [1, 2, 5, 10, 20]:
 					saved_data = np.load(saved_filename, allow_pickle=True)
 					print("To be implemented...", flush=True)
 					sys.exit()
+		
+	# Store all responses for this num_permuted
+	response_dict_all[num_permuted] = response_dict
 
 	# Store results for this num_permuted
 	for gen in gen_types:
