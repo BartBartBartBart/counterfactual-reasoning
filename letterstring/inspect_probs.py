@@ -520,18 +520,29 @@ for num_permuted in [1, 2, 5, 10, 20]:
 
 					if args.promptstyle == "analogical":
 						probs_per_exemplar, total_exemplar_probs = extract_exemplar_probs(tokenizer, scores, generated_ids, args.verbose or t == 0)
-					final_answer_prob, generated_answer_prob, correct_answer_prob = extract_final_answer_prob(
+					res = extract_final_answer_prob(
 						tokenizer=tokenizer,
-						scores=scores, 
+						scores=scores,
 						generated_ids=generated_ids,
 						pred=pred,
-						correct_anwer=true,
+						correct_answer=true,
 						verbose=args.verbose or t == 0
 					)
+					# Function may return a single value or a tuple
+					if isinstance(res, tuple):
+						final_answer_prob, generated_answer_prob, correct_answer_prob = res
+					else:
+						final_answer_prob = res
+						generated_answer_prob = None
+						correct_answer_prob = None
+
 					if args.verbose or t == 0:
-						print(f"Ratio = correct answer prob / generated answer prob")
-						ratio = correct_answer_prob / generated_answer_prob
-						print(f"Ratio: {ratio}")
+						if generated_answer_prob is not None and correct_answer_prob is not None and generated_answer_prob != 0:
+							print("Ratio = correct answer prob / generated answer prob")
+							ratio = correct_answer_prob / generated_answer_prob
+							print(f"Ratio: {ratio}")
+						else:
+							print("Ratio: N/A (missing or zero probabilities)")
 
 					# response_dict[alph]['problems'][(prob_types[p], t)] = {
 					# 	'prompt': messages,
