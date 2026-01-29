@@ -233,7 +233,7 @@ def extract_exemplar_probs(tokenizer, scores, generated_ids, verbose=False):
 
 	return prob_per_exemplar, total_probs
 
-def extract_final_answer_prob(tokenizer, scores, generated_ids, verbose=False):
+def extract_final_answer_prob(tokenizer, scores, generated_ids, correct_answer, verbose=False):
 	"""Extract probability for the final answer between double brackets."""
 	final_answer_prob = None
 	
@@ -288,6 +288,29 @@ def extract_final_answer_prob(tokenizer, scores, generated_ids, verbose=False):
 	final_answer_prob = calculate_token_probability(tokenizer, scores, generated_ids, final_answer_token_indices,
 													verbose=verbose, label="final answer")
 	
+	# If correct answer is same length as extracted final answer, calculate probability for correct answer specifically
+	if correct_answer is not None:
+		correct_answer_tokens = tokenizer(correct_answer, return_tensors="pt")["input_ids"][0]
+		
+		if len(correct_answer_tokens) == (final_answer_end - final_answer_start + 1):
+			correct_answer_token_indices = final_answer_token_indices
+		
+		# if the lengths are different, calculate correct answer prob backwards from final closing bracket (so second to last timestep)
+		# this assumes the correct answer is at the end of the final answer 
+		else:		
+			correct_answer_token_indices = list(range(final_answer_end - len(correct_answer_tokens) + 1, final_answer_end + 1))
+		
+		# change generated_ids to correct answer tokens so that it calculates prob for correct answer specifically
+		# change only final answer part to correct answer tokens
+		generated_ids_correct = generated_ids.clone()
+		for i, idx in enumerate(correct_answer_token_indices):
+			generated_ids_correct[idx] = correct_answer_tokens[i]
+
+		correct_answer_prob = calculate_token_probability(tokenizer, scores, generated_ids_correct, correct_answer_token_indices,
+															verbose=verbose, label="final answer (correct answer tokens)")
+	
+		return final_answer_prob, correct_answer_prob
+
 	return final_answer_prob
 
 if args.use_saved and (not args.model or not args.promptstyle):
@@ -512,6 +535,11 @@ for num_permuted in [1, 2, 5, 10, 20]:
 		
 	# Store all responses for this num_permuted
 	response_dict_all[num_permuted] = response_dict
+	
+	# Save incrementally after each num_permuted iteration
+	temp_output_filename = f'./prob_results/probs_{args.promptstyle}_{problem_dir}_{args.model.replace("/", "_")}_responses.npz'
+	np.savez_compressed(temp_output_filename, response_dict_all=response_dict_all)
+	print(f"Checkpoint saved after {num_permuted} permuted letters: {temp_output_filename}", flush=True)
 
 	# Store results for this num_permuted
 	for gen in gen_types:
