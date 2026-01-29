@@ -5,8 +5,8 @@
 #SBATCH --job-name=8b-probtest
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=9
-#SBATCH --time=04:00:00
-#SBATCH --output=../output/letterstring/prob-tests/qwen3-8b_analogical_10_20_gen_%A.out
+#SBATCH --time=07:00:00
+#SBATCH --output=../output/letterstring/prob-tests/qwen3-8b_analogical_all_gen_finalanswer_%A.out
 
 module purge
 module load 2025
