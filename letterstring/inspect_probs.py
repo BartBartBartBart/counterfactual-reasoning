@@ -233,7 +233,7 @@ def extract_exemplar_probs(tokenizer, scores, generated_ids, verbose=False):
 
 	return prob_per_exemplar, total_probs
 
-def extract_final_answer_prob(tokenizer, scores, generated_ids, correct_answer=None, verbose=False):
+def extract_final_answer_prob(tokenizer, scores, generated_ids, pred=None, correct_answer=None, verbose=False):
 	"""Extract probability for the final answer between double brackets."""
 	final_answer_prob = None
 	
@@ -288,28 +288,71 @@ def extract_final_answer_prob(tokenizer, scores, generated_ids, correct_answer=N
 	final_answer_prob = calculate_token_probability(tokenizer, scores, generated_ids, final_answer_token_indices,
 													verbose=verbose, label="final answer")
 	
-	# If correct answer is same length as extracted final answer, calculate probability for correct answer specifically
+	# If correct answer is provided, calculate probability for the correct answer specifically
 	if correct_answer is not None:
-		correct_answer_tokens = tokenizer(correct_answer, return_tensors="pt")["input_ids"][0]
+		# Tokenize correct answer as if it was written with spaces: 'pqrt' -> tokenize as 'p q r t'
+		# First character without space, subsequent characters with leading space
+		correct_answer_tokens = []
+		clean_answer = correct_answer.replace(" ", "")  # Remove any existing spaces
+		for i, char in enumerate(clean_answer):
+			if i == 0:
+				# First character without space
+				char_tokens = tokenizer(char, return_tensors="pt")["input_ids"][0]
+			else:
+				# Subsequent characters with leading space
+				char_tokens = tokenizer(" " + char, return_tensors="pt")["input_ids"][0]
+			correct_answer_tokens.extend(char_tokens.tolist())
+		correct_answer_tokens = torch.tensor(correct_answer_tokens, device=generated_ids.device)
 		
-		if len(correct_answer_tokens) == (final_answer_end - final_answer_start + 1):
-			correct_answer_token_indices = final_answer_token_indices
+		# Extract the generated answer tokens (between brackets, excluding final bracket)
+		generated_answer_ids = generated_ids[final_answer_start:final_answer_end]
 		
-		# if the lengths are different, calculate correct answer prob backwards from final closing bracket (so second to last timestep)
-		# this assumes the correct answer is at the end of the final answer 
-		else:		
-			correct_answer_token_indices = list(range(final_answer_end - len(correct_answer_tokens) + 1, final_answer_end + 1))
+		# Right-align the sequences
+		gen_len = len(generated_answer_ids)
+		correct_len = len(correct_answer_tokens)
 		
-		# change generated_ids to correct answer tokens so that it calculates prob for correct answer specifically
-		# change only final answer part to correct answer tokens
-		generated_ids_correct = generated_ids.clone()
-		for i, idx in enumerate(correct_answer_token_indices):
-			generated_ids_correct[idx] = correct_answer_tokens[i]
-
-		correct_answer_prob = calculate_token_probability(tokenizer, scores, generated_ids_correct, correct_answer_token_indices,
-															verbose=verbose, label="final answer (correct answer tokens)")
-	
-		return final_answer_prob, correct_answer_prob
+		if gen_len >= correct_len:
+			# Generated is longer or equal: align from the right
+			offset = gen_len - correct_len
+			aligned_gen_indices = list(range(final_answer_start + offset, final_answer_end))
+			aligned_correct_tokens = correct_answer_tokens
+		else:
+			# Correct is longer: take all generated positions
+			aligned_gen_indices = list(range(final_answer_start, final_answer_end))
+			aligned_correct_tokens = correct_answer_tokens[-gen_len:]
+		
+		# At each aligned position, get probabilities from the actual logit distribution
+		gen_probs = []
+		correct_probs = []
+		
+		for i, gen_timestep in enumerate(aligned_gen_indices):
+			if i >= len(aligned_correct_tokens):
+				break
+			
+			gen_token_id = generated_ids[gen_timestep].item()
+			correct_token_id = aligned_correct_tokens[i].item()
+			
+			# Get logits at this timestep
+			logits = scores[gen_timestep][0]
+			logprobs = torch.log_softmax(logits, dim=-1)
+			
+			# Get probabilities
+			gen_prob = np.exp(logprobs[gen_token_id].item())
+			correct_prob = np.exp(logprobs[correct_token_id].item())
+			
+			gen_probs.append(gen_prob)
+			correct_probs.append(correct_prob)
+			
+			if verbose:
+				gen_text = tokenizer.decode([gen_token_id])
+				correct_text = tokenizer.decode([correct_token_id])
+				print(f"Position {i}: generated '{gen_text}' (prob={gen_prob:.6f}), correct '{correct_text}' (prob={correct_prob:.6f})")
+		
+		# Average probabilities across positions
+		generated_answer_prob = np.mean(gen_probs) if gen_probs else None
+		correct_answer_prob = np.mean(correct_probs) if correct_probs else None
+		
+		return final_answer_prob, generated_answer_prob, correct_answer_prob
 
 	return final_answer_prob
 
@@ -385,7 +428,7 @@ response_dict_all = {} # Stores responses for all problems, together with their 
 
 # Collect average exemplar probability for each number of permuted letters
 for num_permuted in [1, 2, 5, 10, 20]:
-	response_dict = {}
+	# response_dict = {}
 
 	# Initialize lists for this num_permuted
 	exemplar_probs_list = {gen: {'correct': [], 'incorrect': [], 'total': []} for gen in gen_types}
@@ -406,9 +449,9 @@ for num_permuted in [1, 2, 5, 10, 20]:
 			
 		shuffled_alphabet = builtins.list(all_prob.item()[alph]['shuffled_alphabet'])
 
-		response_dict[alph] = {'shuffled_letters': shuffled_letters,
-							   'shuffled_alphabet': shuffled_alphabet,
-							   'problems': {}}
+		# response_dict[alph] = {'shuffled_letters': shuffled_letters,
+		# 					   'shuffled_alphabet': shuffled_alphabet,
+		# 					   'problems': {}}
 
 		prob_types = builtins.list(all_prob.item()[alph].keys())[2:] # first two items are list of shuffled letters and shuflled alphabet: skip this
 		N_prob_types = len(prob_types) # -1 # minus 1 to skip attention problems
@@ -450,15 +493,6 @@ for num_permuted in [1, 2, 5, 10, 20]:
 						print("\n=== RESPONSE ===\n", flush=True)
 						print(pred, flush=True)
 					
-					if args.promptstyle == "analogical":
-						probs_per_exemplar, total_exemplar_probs = extract_exemplar_probs(tokenizer, scores, generated_ids, args.verbose or t == 0)
-					final_answer_prob = extract_final_answer_prob(
-						tokenizer=tokenizer,
-						scores=scores, 
-						generated_ids=generated_ids, 
-						verbose=args.verbose or t == 0
-					)
-					
 					# Determine correctness
 					# Filter the answer, take only the content inside double brackets [[ answer ]]
 					if '[[' in pred and ']]' in pred:
@@ -484,20 +518,35 @@ for num_permuted in [1, 2, 5, 10, 20]:
 					if args.verbose:
 						print(f"Final decision on correctness: {correct}", flush=True)
 
-					response_dict[alph]['problems'][(prob_types[p], t)] = {
-						'prompt': messages,
-						'generated_ids': generated_ids.cpu().numpy(),
-						'scores': [s.cpu().numpy() for s in scores],
-						'full_text': full_text,
-						'predicted_answer': pred,
-						'correct': correct,
-						'final_answer_prob': final_answer_prob
-					}
-
 					if args.promptstyle == "analogical":
-						# Store exemplar probabilities
-						response_dict[alph]['problems'][(prob_types[p], t)]['exemplar_probs'] = probs_per_exemplar
-						response_dict[alph]['problems'][(prob_types[p], t)]['total_exemplar_probs'] = total_exemplar_probs
+						probs_per_exemplar, total_exemplar_probs = extract_exemplar_probs(tokenizer, scores, generated_ids, args.verbose or t == 0)
+					final_answer_prob, generated_answer_prob, correct_answer_prob = extract_final_answer_prob(
+						tokenizer=tokenizer,
+						scores=scores, 
+						generated_ids=generated_ids,
+						pred=pred,
+						correct_anwer=true,
+						verbose=args.verbose or t == 0
+					)
+					if args.verbose or t == 0:
+						print(f"Ratio = correct answer prob / generated answer prob")
+						ratio = correct_answer_prob / generated_answer_prob
+						print(f"Ratio: {ratio}")
+
+					# response_dict[alph]['problems'][(prob_types[p], t)] = {
+					# 	'prompt': messages,
+					# 	'generated_ids': generated_ids.cpu().numpy(),
+					# 	'scores': [s.cpu().numpy() for s in scores],
+					# 	'full_text': full_text,
+					# 	'predicted_answer': pred,
+					# 	'correct': correct,
+					# 	'final_answer_prob': final_answer_prob
+					# }
+
+					# if args.promptstyle == "analogical":
+						# # Store exemplar probabilities
+						# response_dict[alph]['problems'][(prob_types[p], t)]['exemplar_probs'] = probs_per_exemplar
+						# response_dict[alph]['problems'][(prob_types[p], t)]['total_exemplar_probs'] = total_exemplar_probs
 
 					if args.gen == "nogen":
 						gen_key = "0gen"
@@ -539,12 +588,12 @@ for num_permuted in [1, 2, 5, 10, 20]:
 					sys.exit()
 		
 	# Store all responses for this num_permuted
-	response_dict_all[num_permuted] = response_dict
+	# response_dict_all[num_permuted] = response_dict
 	
 	# Save incrementally after each num_permuted iteration
-	temp_output_filename = f'./prob_results/probs_{args.promptstyle}_{problem_dir}_{args.model.replace("/", "_")}_responses.npz'
-	np.savez_compressed(temp_output_filename, response_dict_all=response_dict_all)
-	print(f"Checkpoint saved after {num_permuted} permuted letters: {temp_output_filename}", flush=True)
+	# temp_output_filename = f'./prob_results/probs_{args.promptstyle}_{problem_dir}_{args.model.replace("/", "_")}_responses.npz'
+	# np.savez_compressed(temp_output_filename, response_dict_all=response_dict_all)
+	# print(f"Checkpoint saved after {num_permuted} permuted letters: {temp_output_filename}", flush=True)
 
 	# Store results for this num_permuted
 	for gen in gen_types:
