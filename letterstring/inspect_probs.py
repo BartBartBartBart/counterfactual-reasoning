@@ -233,7 +233,7 @@ def extract_exemplar_probs(tokenizer, scores, generated_ids, verbose=False):
 
 	return prob_per_exemplar, total_probs
 
-def extract_final_answer_prob(tokenizer, scores, generated_ids, correct_answer, verbose=False):
+def extract_final_answer_prob(tokenizer, scores, generated_ids, correct_answer=None, verbose=False):
 	"""Extract probability for the final answer between double brackets."""
 	final_answer_prob = None
 	
@@ -452,7 +452,12 @@ for num_permuted in [1, 2, 5, 10, 20]:
 					
 					if args.promptstyle == "analogical":
 						probs_per_exemplar, total_exemplar_probs = extract_exemplar_probs(tokenizer, scores, generated_ids, args.verbose or t == 0)
-					final_answer_prob = extract_final_answer_prob(tokenizer, scores, generated_ids, args.verbose or t == 0)
+					final_answer_prob = extract_final_answer_prob(
+						tokenizer=tokenizer,
+						scores=scores, 
+						generated_ids=generated_ids, 
+						verbose=args.verbose or t == 0
+					)
 					
 					# Determine correctness
 					# Filter the answer, take only the content inside double brackets [[ answer ]]
