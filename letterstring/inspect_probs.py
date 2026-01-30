@@ -355,10 +355,10 @@ def extract_final_answer_prob(tokenizer, scores, generated_ids, pred=None, corre
 			logits = scores[idx][0]
 			logprobs = torch.log_softmax(logits, dim=-1)
 			tok_id = generated_ids[idx].item()
+			logp = logprobs[tok_id].item()
 			if verbose: 
 				gen_text = tokenizer.decode([tok_id])
-				print(f"Position {idx}: generated '{gen_text}' (id {gen_token_id})")
-			logp = logprobs[tok_id].item()
+				print(f"Position {idx}: generated '{gen_text}' (id {tok_id})")
 			gen_log_sum += logp
 			gen_count += 1
 		
