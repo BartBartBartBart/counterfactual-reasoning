@@ -234,7 +234,16 @@ def extract_exemplar_probs(tokenizer, scores, generated_ids, verbose=False):
 	return prob_per_exemplar, total_probs
 
 def extract_final_answer_prob(tokenizer, scores, generated_ids, pred=None, correct_answer=None, verbose=False):
-	"""Extract probability for the final answer between double brackets."""
+	"""Extract probability for the final answer between double brackets.
+
+	This function finds the final inner answer (the content between the last '[' and the next ']'
+	inside the double-bracket final answer) and computes:
+	- final_answer_prob: product probability across the full bracketed final answer span (as before)
+	- generated_answer_prob: geometric mean (length-normalized) probability for the entire generated final answer
+	- correct_answer_prob: geometric mean (length-normalized) probability for the correct answer when left-aligned to the generated answer tokens
+	
+	If `correct_answer` is not provided the function returns only `final_answer_prob`.
+	"""
 	final_answer_prob = None
 	
 	# Search for opening double bracket
@@ -304,53 +313,82 @@ def extract_final_answer_prob(tokenizer, scores, generated_ids, pred=None, corre
 			correct_answer_tokens.extend(char_tokens.tolist())
 		correct_answer_tokens = torch.tensor(correct_answer_tokens, device=generated_ids.device)
 		
-		# Extract the generated answer tokens (between brackets, excluding final bracket)
-		generated_answer_ids = generated_ids[final_answer_start:final_answer_end]
+		# Identify the generated final inner answer (the part between the last '[' and the next ']')
+		last_open = None
+		for token_idx in range(final_answer_start, final_answer_end + 1):
+			token_text = tokenizer.decode([generated_ids[token_idx]])
+			if "[" in token_text:
+				last_open = token_idx
 		
-		# Right-align the sequences
-		gen_len = len(generated_answer_ids)
-		correct_len = len(correct_answer_tokens)
-		
-		if gen_len >= correct_len:
-			# Generated is longer or equal: align from the right
-			offset = gen_len - correct_len
-			aligned_gen_indices = list(range(final_answer_start + offset, final_answer_end))
-			aligned_correct_tokens = correct_answer_tokens
+		if last_open is None:
+			# fallback: use the range between final_answer_start and final_answer_end
+			gen_answer_start = final_answer_start + 1
 		else:
-			# Correct is longer: take all generated positions
-			aligned_gen_indices = list(range(final_answer_start, final_answer_end))
-			aligned_correct_tokens = correct_answer_tokens[-gen_len:]
+			gen_answer_start = last_open + 1
 		
-		# At each aligned position, get probabilities from the actual logit distribution
-		gen_probs = []
-		correct_probs = []
-		
-		for i, gen_timestep in enumerate(aligned_gen_indices):
-			if i >= len(aligned_correct_tokens):
+		# Find corresponding closing bracket
+		gen_answer_end = None
+		for token_idx in range(gen_answer_start, final_answer_end + 1):
+			token_text = tokenizer.decode([generated_ids[token_idx]])
+			if "]" in token_text:
+				gen_answer_end = token_idx
 				break
-			
-			gen_token_id = generated_ids[gen_timestep].item()
-			correct_token_id = aligned_correct_tokens[i].item()
-			
-			# Get logits at this timestep
-			logits = scores[gen_timestep][0]
+		
+		if gen_answer_end is None:
+			# fallback: use up to final_answer_end (exclusive)
+			gen_answer_end = final_answer_end
+		
+		# Indices of tokens that form the generated final answer (excluding brackets)
+		gen_indices = list(range(gen_answer_start, gen_answer_end))
+		
+		# Compute geometric-mean probability for the entire generated final answer
+		gen_log_sum = 0.0
+		gen_count = 0
+		if len(gen_indices) == 0 and verbose:
+			print("No tokens found for generated final answer between brackets")
+		for idx in gen_indices:
+			if idx >= len(scores):
+				# No score available for this timestep
+				if verbose:
+					print(f"  WARNING: no score for token index {idx}")
+				continue
+			logits = scores[idx][0]
 			logprobs = torch.log_softmax(logits, dim=-1)
-			
-			# Get probabilities
-			gen_prob = np.exp(logprobs[gen_token_id].item())
-			correct_prob = np.exp(logprobs[correct_token_id].item())
-			
-			gen_probs.append(gen_prob)
-			correct_probs.append(correct_prob)
-			
+			tok_id = generated_ids[idx].item()
+			if verbose: 
+				gen_text = tokenizer.decode([tok_id])
+				print(f"Position {idx}: generated '{gen_text}' (id {gen_token_id})")
+			logp = logprobs[tok_id].item()
+			gen_log_sum += logp
+			gen_count += 1
+		
+		print(f"Dividing given answer logprobs by {gen_count} tokens.")
+		generated_answer_prob = np.exp(gen_log_sum / gen_count) if gen_count > 0 else None
+		
+		# LEFT-align the correct answer to the generated final answer and compute geometric mean
+		correct_log_sum = 0.0
+		correct_count = 0
+		for i, idx in enumerate(gen_indices):
+			if i >= len(correct_answer_tokens):
+				break
+			if idx >= len(scores):
+				if verbose:
+					print(f"  WARNING: no score for token index {idx}")
+				continue
+			logits = scores[idx][0]
+			logprobs = torch.log_softmax(logits, dim=-1)
+			gen_token_id = generated_ids[idx].item()
+			correct_token_id = correct_answer_tokens[i].item()
+			correct_logp = logprobs[correct_token_id].item()
 			if verbose:
 				gen_text = tokenizer.decode([gen_token_id])
 				correct_text = tokenizer.decode([correct_token_id])
-				print(f"Position {i}: generated '{gen_text}' (prob={gen_prob:.6f}), correct '{correct_text}' (prob={correct_prob:.6f})")
+				print(f"Position {i}: generated '{gen_text}' (id {gen_token_id}), correct '{correct_text}' (id {correct_token_id}), correct_logp={correct_logp:.6f}")
+			correct_log_sum += correct_logp
+			correct_count += 1
 		
-		# Average probabilities across positions
-		generated_answer_prob = np.mean(gen_probs) if gen_probs else None
-		correct_answer_prob = np.mean(correct_probs) if correct_probs else None
+		print(f"Dividing correct answer logprobs by {correct_answer_tokens} tokens.")
+		correct_answer_prob = np.exp(correct_log_sum / correct_answer_tokens) if correct_answer_tokens > 0 else None
 		
 		return final_answer_prob, generated_answer_prob, correct_answer_prob
 
@@ -424,6 +462,7 @@ else:
 # Initialize data structures
 average_exemplar_probs = {gen: {'correct': [], 'incorrect': [], 'total': []} for gen in gen_types}
 average_final_answer_probs = {gen: {'correct': [], 'incorrect': [], 'total': []} for gen in gen_types}
+average_ratios = {gen: {'correct': [], 'incorrect': [], 'total': []} for gen in gen_types}
 response_dict_all = {} # Stores responses for all problems, together with their scores and generation_ids in npz format
 
 # Collect average exemplar probability for each number of permuted letters
@@ -433,7 +472,8 @@ for num_permuted in [1, 2, 5, 10, 20]:
 	# Initialize lists for this num_permuted
 	exemplar_probs_list = {gen: {'correct': [], 'incorrect': [], 'total': []} for gen in gen_types}
 	final_answer_probs = {gen: {'correct': [], 'incorrect': [], 'total': []} for gen in gen_types}
-	
+	ratios_list = {gen: {'correct': [], 'incorrect': [], 'total': []} for gen in gen_types}
+
 	if args.gen == "nogen":
 		all_prob = np.load(f'./problems/nogen/all_prob_{num_permuted}_7_human.npz', allow_pickle=True)['all_prob']
 	else:
@@ -538,7 +578,7 @@ for num_permuted in [1, 2, 5, 10, 20]:
 
 					if args.verbose or t == 0:
 						if generated_answer_prob is not None and correct_answer_prob is not None and generated_answer_prob != 0:
-							print("Ratio = correct answer prob / generated answer prob")
+							print(f"Ratio = correct answer prob {correct_answer_prob}/ generated answer prob {generated_answer_prob}")
 							ratio = correct_answer_prob / generated_answer_prob
 							print(f"Ratio: {ratio}")
 						else:
@@ -573,21 +613,28 @@ for num_permuted in [1, 2, 5, 10, 20]:
 							exemplar_probs_list[gen_key]['correct'].extend(total_exemplar_probs)
 						if final_answer_prob is not None:
 							final_answer_probs[gen_key]['correct'].append(final_answer_prob)
+						if generated_answer_prob is not None: 
+							ratios_list[gen_key]['correct'].append(ratio)
 					else:
 						if args.promptstyle == "analogical":
 							exemplar_probs_list[gen_key]['incorrect'].extend(total_exemplar_probs)
 						if final_answer_prob is not None:
 							final_answer_probs[gen_key]['incorrect'].append(final_answer_prob)
-					
+						if generated_answer_prob is not None: 
+							ratios_list[gen_key]['incorrect'].append(ratio)
+							
 					# Also store total
 					if args.promptstyle == "analogical":
 						exemplar_probs_list[gen_key]['total'].extend(total_exemplar_probs)
 					if final_answer_prob is not None:
 						final_answer_probs[gen_key]['total'].append(final_answer_prob)
-						# Clean up GPU memory after generation
-						del generated_ids, scores, full_text
-						if torch.cuda.is_available():
-							torch.cuda.empty_cache()
+					if generated_answer_prob is not None: 
+							ratios_list[gen_key]['total'].append(ratio)
+
+					# Clean up GPU memory after generation
+					del generated_ids, scores, full_text
+					if torch.cuda.is_available():
+						torch.cuda.empty_cache()
 				elif args.use_saved:
 					# Load saved responses
 					saved_filename = f'./saved_responses/responses_{args.promptstyle}_{problem_dir}_{args.model.replace("/", "_")}_responses.npz'
@@ -611,6 +658,7 @@ for num_permuted in [1, 2, 5, 10, 20]:
 		if args.promptstyle == "analogical":
 			average_exemplar_probs[gen][num_permuted] = exemplar_probs_list[gen]
 		average_final_answer_probs[gen][num_permuted] = final_answer_probs[gen]
+		average_ratios[gen][num_permuted] = ratios_list[gen]
 		
 		print(f"Completed {gen} probabilities for {num_permuted} permuted letters.", flush=True)
 
@@ -646,10 +694,21 @@ for gen in gen_types:
 					std_final_prob = np.std(final_probs_list)
 					print(f"    {key}: {avg_final_prob:.6f} +- {std_final_prob:.6f} (n={len(final_probs_list)})", flush=True)
 
+			ratios_dict = average_ratios[gen][num_permuted]
+			print(f"  Correct/given probability ratios:", flush=True)
+			
+			for key in ['correct', 'incorrect', 'total']:
+				ratio_list = ratios_dict[key]
+				if ratio_list:
+					avg_ratio = np.mean(ratio_list)
+					std_ratio = np.std(ratio_list)
+					print(f"    {key}: {avg_ratio:.6f} +- {std_ratio:.6f} (n={len(ratio_list)})", flush=True)
+
+
 end = time.time()
 print(f"\nTotal time: {end-start} seconds.", flush=True)
 
 # Save all responses to npz file
-output_filename = f'./prob_results/probs_{args.promptstyle}_{problem_dir}_{args.model.replace("/", "_")}_responses.npz'
-np.savez_compressed(output_filename, response_dict_all=response_dict_all)
-print(f"All responses saved to {output_filename}", flush=True)
+# output_filename = f'./prob_results/probs_{args.promptstyle}_{problem_dir}_{args.model.replace("/", "_")}_responses.npz'
+# np.savez_compressed(output_filename, response_dict_all=response_dict_all)
+# print(f"All responses saved to {output_filename}", flush=True)
