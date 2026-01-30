@@ -233,7 +233,7 @@ def extract_exemplar_probs(tokenizer, scores, generated_ids, verbose=False):
 
 	return prob_per_exemplar, total_probs
 
-def extract_final_answer_prob(tokenizer, scores, generated_ids, pred=None, correct_answer=None, verbose=False):
+def extract_final_answer_prob(tokenizer, scores, generated_ids, correct_answer=None, verbose=False):
 	"""Extract probability for the final answer between double brackets.
 
 	This function finds the final inner answer (the content between the last '[' and the next ']'
@@ -299,20 +299,7 @@ def extract_final_answer_prob(tokenizer, scores, generated_ids, pred=None, corre
 	
 	# If correct answer is provided, calculate probability for the correct answer specifically
 	if correct_answer is not None:
-		# Tokenize correct answer as if it was written with spaces: 'pqrt' -> tokenize as 'p q r t'
-		# First character without space, subsequent characters with leading space
-		correct_answer_tokens = []
-		clean_answer = correct_answer.replace(" ", "")  # Remove any existing spaces
-		for i, char in enumerate(clean_answer):
-			if i == 0:
-				# First character without space
-				char_tokens = tokenizer(char, return_tensors="pt")["input_ids"][0]
-			else:
-				# Subsequent characters with leading space
-				char_tokens = tokenizer(" " + char, return_tensors="pt")["input_ids"][0]
-			correct_answer_tokens.extend(char_tokens.tolist())
-		correct_answer_tokens = torch.tensor(correct_answer_tokens, device=generated_ids.device)
-		
+
 		# Identify the generated final inner answer (the part between the last '[' and the next ']')
 		last_open = None
 		for token_idx in range(final_answer_start, final_answer_end + 1):
@@ -340,34 +327,41 @@ def extract_final_answer_prob(tokenizer, scores, generated_ids, pred=None, corre
 		
 		# Indices of tokens that form the generated final answer (excluding brackets)
 		gen_indices = list(range(gen_answer_start, gen_answer_end))
+
+		# Tokenize correct answer as if it was written with spaces: 'pqrt' -> tokenize as 'p q r t'
+		# First character without space, subsequent characters with leading space
+		correct_answer_tokens = []
+		clean_answer = correct_answer.replace(" ", "")  # Remove any existing spaces
+		for i, char in enumerate(clean_answer):
+			if i <= len(gen_indices) - 1:
+				gen_token_id = generated_ids[gen_indices[i]].item()
+				generated_token = tokenizer.decode([gen_token_id])
+				if generated_token.startswith(" "):
+					# Subsequent characters with leading space
+					char_tokens = tokenizer(" " + char, return_tensors="pt")["input_ids"][0]
+				else:
+					# First character without space
+					char_tokens = tokenizer(char, return_tensors="pt")["input_ids"][0]
+			else: 
+				break				
+			correct_answer_tokens.extend(char_tokens.tolist())
+
+		if len(correct_answer_tokens) < len(gen_indices):
+			# Pad correct_answer_tokens with EOS token ids so its length matches the generated prediction length
+			diff = len(gen_indices) - len(correct_answer_tokens)
+			# Prefer the tokenizer's eos_token_id, fall back to pad_token_id if necessary
+			eos_id = tokenizer.eos_token_id if getattr(tokenizer, 'eos_token_id', None) is not None else getattr(tokenizer, 'pad_token_id', None)
+			if eos_id is None:
+				raise RuntimeError("Tokenizer has neither eos_token_id nor pad_token_id to use for padding")
+			eos_ids = [int(eos_id)] * diff
+			if verbose:
+				print(f"Padding correct answer tokens with {diff} EOS ids ({eos_id})")
+			correct_answer_tokens.extend(eos_ids)
+		correct_answer_tokens = torch.tensor(correct_answer_tokens, device=generated_ids.device)		
 		
-		# Compute geometric-mean probability for the entire generated final answer
-		gen_log_sum = 0.0
-		gen_count = 0
-		if len(gen_indices) == 0 and verbose:
-			print("No tokens found for generated final answer between brackets")
-		for idx in gen_indices:
-			if idx >= len(scores):
-				# No score available for this timestep
-				if verbose:
-					print(f"  WARNING: no score for token index {idx}")
-				continue
-			logits = scores[idx][0]
-			logprobs = torch.log_softmax(logits, dim=-1)
-			tok_id = generated_ids[idx].item()
-			logp = logprobs[tok_id].item()
-			if verbose: 
-				gen_text = tokenizer.decode([tok_id])
-				print(f"Position {idx}: generated '{gen_text}' (id {tok_id})")
-			gen_log_sum += logp
-			gen_count += 1
-		
-		print(f"Dividing given answer logprobs by {gen_count} tokens.")
-		generated_answer_prob = np.exp(gen_log_sum / gen_count) if gen_count > 0 else None
-		
-		# LEFT-align the correct answer to the generated final answer and compute geometric mean
+		# LEFT-align the correct answer to the generated final answer
 		correct_log_sum = 0.0
-		correct_count = 0
+		gen_log_sum = 0.0 
 		for i, idx in enumerate(gen_indices):
 			if i >= len(correct_answer_tokens):
 				break
@@ -378,17 +372,23 @@ def extract_final_answer_prob(tokenizer, scores, generated_ids, pred=None, corre
 			logits = scores[idx][0]
 			logprobs = torch.log_softmax(logits, dim=-1)
 			gen_token_id = generated_ids[idx].item()
+			gen_logp = logprobs[gen_token_id].item()
 			correct_token_id = correct_answer_tokens[i].item()
 			correct_logp = logprobs[correct_token_id].item()
 			if verbose:
 				gen_text = tokenizer.decode([gen_token_id])
 				correct_text = tokenizer.decode([correct_token_id])
-				print(f"Position {i}: generated '{gen_text}' (id {gen_token_id}), correct '{correct_text}' (id {correct_token_id}), correct_logp={correct_logp:.6f}")
+				print(f"Position {i}: generated '{gen_text}' (id {gen_token_id}) w logp={gen_logp}, correct '{correct_text}' (id {correct_token_id}), correct_logp={correct_logp}")
+			gen_log_sum += gen_logp
 			correct_log_sum += correct_logp
-			correct_count += 1
 		
-		print(f"Dividing correct answer logprobs by {correct_count} tokens.")
-		correct_answer_prob = np.exp(correct_log_sum / correct_count) if correct_count > 0 else None
+		generated_answer_prob = np.exp(gen_log_sum)
+		correct_answer_prob = np.exp(correct_log_sum)
+
+		print(f"p(correct): {correct_answer_prob}, log p(correct): {correct_log_sum}")
+		print(f"p(generated): {generated_answer_prob}, log p(generated): {gen_log_sum}")
+		print(f"[log p(correct) - log p(generated)] = {correct_log_sum} - {gen_log_sum} = {correct_log_sum - gen_log_sum}, exp of this is: {np.exp(correct_log_sum - gen_log_sum)}")
+		print(f"correct/generated {correct_answer_prob/generated_answer_prob}")
 		
 		return final_answer_prob, generated_answer_prob, correct_answer_prob
 
