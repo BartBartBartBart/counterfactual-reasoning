@@ -564,7 +564,6 @@ for num_permuted in [1, 2, 5, 10, 20]:
 						tokenizer=tokenizer,
 						scores=scores,
 						generated_ids=generated_ids,
-						pred=pred,
 						correct_answer=true,
 						verbose=args.verbose or t == 0
 					)
