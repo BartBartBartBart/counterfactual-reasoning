@@ -387,8 +387,8 @@ def extract_final_answer_prob(tokenizer, scores, generated_ids, pred=None, corre
 			correct_log_sum += correct_logp
 			correct_count += 1
 		
-		print(f"Dividing correct answer logprobs by {correct_answer_tokens} tokens.")
-		correct_answer_prob = np.exp(correct_log_sum / correct_answer_tokens) if correct_answer_tokens > 0 else None
+		print(f"Dividing correct answer logprobs by {correct_count} tokens.")
+		correct_answer_prob = np.exp(correct_log_sum / correct_count) if correct_count > 0 else None
 		
 		return final_answer_prob, generated_answer_prob, correct_answer_prob
 
