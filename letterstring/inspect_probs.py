@@ -709,12 +709,6 @@ end = time.time()
 print(f"\nTotal time: {end-start} seconds.", flush=True)
 
 # Save all responses to npz file
-<<<<<<< HEAD
-output_filename = f'./prob_results/probs_{args.promptstyle}_{problem_dir}_{args.model.replace("/", "_")}_responses.npz'
-np.savez_compressed(output_filename, response_dict_all=response_dict_all)
-print(f"All responses saved to {output_filename}", flush=True)
-=======
 # output_filename = f'./prob_results/probs_{args.promptstyle}_{problem_dir}_{args.model.replace("/", "_")}_responses.npz'
 # np.savez_compressed(output_filename, response_dict_all=response_dict_all)
 # print(f"All responses saved to {output_filename}", flush=True)
->>>>>>> d7f60202d75e80d4aa0b2bbf42d6f0d4c25831de
