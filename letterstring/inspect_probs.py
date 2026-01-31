@@ -299,6 +299,7 @@ def extract_final_answer_prob(tokenizer, scores, generated_ids, correct_answer=N
 	
 	# If correct answer is provided, calculate probability for the correct answer specifically
 	if correct_answer is not None:
+		flag = None
 
 		# Identify the generated final inner answer (the part between the last '[' and the next ']')
 		last_open = None
@@ -347,16 +348,21 @@ def extract_final_answer_prob(tokenizer, scores, generated_ids, correct_answer=N
 			correct_answer_tokens.extend(char_tokens.tolist())
 
 		if len(correct_answer_tokens) < len(gen_indices):
-			# Pad correct_answer_tokens with EOS token ids so its length matches the generated prediction length
-			diff = len(gen_indices) - len(correct_answer_tokens)
-			# Prefer the tokenizer's eos_token_id, fall back to pad_token_id if necessary
-			eos_id = tokenizer.eos_token_id if getattr(tokenizer, 'eos_token_id', None) is not None else getattr(tokenizer, 'pad_token_id', None)
-			if eos_id is None:
-				raise RuntimeError("Tokenizer has neither eos_token_id nor pad_token_id to use for padding")
-			eos_ids = [int(eos_id)] * diff
-			if verbose:
-				print(f"Padding correct answer tokens with {diff} EOS ids ({eos_id})")
-			correct_answer_tokens.extend(eos_ids)
+			flag = "stopped late"
+			# # Pad correct_answer_tokens with EOS token ids so its length matches the generated prediction length
+			# diff = len(gen_indices) - len(correct_answer_tokens)
+			# # Prefer the tokenizer's eos_token_id, fall back to pad_token_id if necessary
+			# eos_id = tokenizer.eos_token_id if getattr(tokenizer, 'eos_token_id', None) is not None else getattr(tokenizer, 'pad_token_id', None)
+			# if eos_id is None:
+			# 	raise RuntimeError("Tokenizer has neither eos_token_id nor pad_token_id to use for padding")
+			# eos_ids = [int(eos_id)] * diff
+			# if verbose:
+			# 	print(f"Padding correct answer tokens with {diff} EOS ids ({eos_id})")
+			# correct_answer_tokens.extend(eos_ids)
+		elif len(correct_answer_tokens) > len(gen_indices):
+			flag = "stopped early"
+		else: 
+			flag = "same length"
 		correct_answer_tokens = torch.tensor(correct_answer_tokens, device=generated_ids.device)		
 		
 		# LEFT-align the correct answer to the generated final answer
@@ -384,13 +390,14 @@ def extract_final_answer_prob(tokenizer, scores, generated_ids, correct_answer=N
 		
 		generated_answer_prob = np.exp(gen_log_sum)
 		correct_answer_prob = np.exp(correct_log_sum)
+		ratio = np.exp(correct_log_sum - gen_log_sum)
 
-		print(f"p(correct): {correct_answer_prob}, log p(correct): {correct_log_sum}")
-		print(f"p(generated): {generated_answer_prob}, log p(generated): {gen_log_sum}")
-		print(f"[log p(correct) - log p(generated)] = {correct_log_sum} - {gen_log_sum} = {correct_log_sum - gen_log_sum}, exp of this is: {np.exp(correct_log_sum - gen_log_sum)}")
-		print(f"correct/generated {correct_answer_prob/generated_answer_prob}")
+		if verbose: 
+			print(f"logp(correct)={correct_log_sum}, logp(given)={gen_log_sum}")
+			print(f"log Ratio=logp(correct)-logp(given)={correct_log_sum}-{gen_log_sum}={correct_log_sum-gen_log_sum}")
+			print(f"Ratio = np.exp(log Ratio) = np.exp({correct_log_sum-gen_log_sum}) = {ratio}")
 		
-		return final_answer_prob, generated_answer_prob, correct_answer_prob
+		return final_answer_prob, ratio, flag
 
 	return final_answer_prob
 
@@ -462,7 +469,7 @@ else:
 # Initialize data structures
 average_exemplar_probs = {gen: {'correct': [], 'incorrect': [], 'total': []} for gen in gen_types}
 average_final_answer_probs = {gen: {'correct': [], 'incorrect': [], 'total': []} for gen in gen_types}
-average_ratios = {gen: {'correct': [], 'incorrect': [], 'total': []} for gen in gen_types}
+average_ratios = {gen: {'same length': [], 'stopped early': [], 'stopped late': []} for gen in gen_types}
 response_dict_all = {} # Stores responses for all problems, together with their scores and generation_ids in npz format
 
 # Collect average exemplar probability for each number of permuted letters
@@ -472,7 +479,7 @@ for num_permuted in [1, 2, 5, 10, 20]:
 	# Initialize lists for this num_permuted
 	exemplar_probs_list = {gen: {'correct': [], 'incorrect': [], 'total': []} for gen in gen_types}
 	final_answer_probs = {gen: {'correct': [], 'incorrect': [], 'total': []} for gen in gen_types}
-	ratios_list = {gen: {'correct': [], 'incorrect': [], 'total': []} for gen in gen_types}
+	ratios_list = {gen: {'same length': [], 'stopped early': [], 'stopped late': []} for gen in gen_types}
 
 	if args.gen == "nogen":
 		all_prob = np.load(f'./problems/nogen/all_prob_{num_permuted}_7_human.npz', allow_pickle=True)['all_prob']
@@ -569,17 +576,26 @@ for num_permuted in [1, 2, 5, 10, 20]:
 					)
 					# Function may return a single value or a tuple
 					if isinstance(res, tuple):
-						final_answer_prob, generated_answer_prob, correct_answer_prob = res
+						final_answer_prob, ratio, flag = res
 					else:
 						final_answer_prob = res
-						generated_answer_prob = None
-						correct_answer_prob = None
+						ratio = None
+						flag = None
+
+					if args.gen == "nogen":
+						gen_key = "0gen"
+					elif prob_types[p].startswith("2gen"):
+						gen_key = "2gen"
+					elif prob_types[p].startswith("3gen"):
+						gen_key = "3gen"
+					else:
+						gen_key = "1gen"
 
 					if args.verbose or t == 0:
-						if generated_answer_prob is not None and correct_answer_prob is not None and generated_answer_prob != 0:
-							print(f"Ratio = correct answer prob {correct_answer_prob}/ generated answer prob {generated_answer_prob}")
-							ratio = correct_answer_prob / generated_answer_prob
+						if ratio is not None and flag is not None: 
 							print(f"Ratio: {ratio}")
+							print(f"Flag: {flag}")
+							ratios_list[gen_key][flag].append(ratio)
 						else:
 							print("Ratio: N/A (missing or zero probabilities)")
 
@@ -598,37 +614,24 @@ for num_permuted in [1, 2, 5, 10, 20]:
 						# response_dict[alph]['problems'][(prob_types[p], t)]['exemplar_probs'] = probs_per_exemplar
 						# response_dict[alph]['problems'][(prob_types[p], t)]['total_exemplar_probs'] = total_exemplar_probs
 
-					if args.gen == "nogen":
-						gen_key = "0gen"
-					elif prob_types[p].startswith("2gen"):
-						gen_key = "2gen"
-					elif prob_types[p].startswith("3gen"):
-						gen_key = "3gen"
-					else:
-						gen_key = "1gen"
 
 					if correct: 
 						if args.promptstyle == "analogical":
 							exemplar_probs_list[gen_key]['correct'].extend(total_exemplar_probs)
 						if final_answer_prob is not None:
 							final_answer_probs[gen_key]['correct'].append(final_answer_prob)
-						if generated_answer_prob is not None: 
-							ratios_list[gen_key]['correct'].append(ratio)
+						
 					else:
 						if args.promptstyle == "analogical":
 							exemplar_probs_list[gen_key]['incorrect'].extend(total_exemplar_probs)
 						if final_answer_prob is not None:
 							final_answer_probs[gen_key]['incorrect'].append(final_answer_prob)
-						if generated_answer_prob is not None: 
-							ratios_list[gen_key]['incorrect'].append(ratio)
-							
+						
 					# Also store total
 					if args.promptstyle == "analogical":
 						exemplar_probs_list[gen_key]['total'].extend(total_exemplar_probs)
 					if final_answer_prob is not None:
 						final_answer_probs[gen_key]['total'].append(final_answer_prob)
-					if generated_answer_prob is not None: 
-							ratios_list[gen_key]['total'].append(ratio)
 
 					# Clean up GPU memory after generation
 					del generated_ids, scores, full_text
@@ -696,7 +699,7 @@ for gen in gen_types:
 			ratios_dict = average_ratios[gen][num_permuted]
 			print(f"  Correct/given probability ratios:", flush=True)
 			
-			for key in ['correct', 'incorrect', 'total']:
+			for key in ['same length', 'stopped early', 'stopped late']:
 				ratio_list = ratios_dict[key]
 				if ratio_list:
 					avg_ratio = np.mean(ratio_list)
