@@ -361,6 +361,7 @@ def extract_final_answer_prob(tokenizer, scores, generated_ids, correct_answer=N
 			# correct_answer_tokens.extend(eos_ids)
 		elif len(correct_answer_tokens) > len(gen_indices):
 			flag = "stopped early"
+			print(f"Shorter given answer detected.")
 		else: 
 			flag = "same length"
 		correct_answer_tokens = torch.tensor(correct_answer_tokens, device=generated_ids.device)		
@@ -591,12 +592,13 @@ for num_permuted in [1, 2, 5, 10, 20]:
 					else:
 						gen_key = "1gen"
 
-					if args.verbose or t == 0:
-						if ratio is not None and flag is not None: 
+					if ratio is not None and flag is not None: 
+						if args.verbose: 
 							print(f"Ratio: {ratio}")
 							print(f"Flag: {flag}")
-							ratios_list[gen_key][flag].append(ratio)
-						else:
+						ratios_list[gen_key][flag].append(ratio)
+					else:
+						if args.verbose:
 							print("Ratio: N/A (missing or zero probabilities)")
 
 					# response_dict[alph]['problems'][(prob_types[p], t)] = {
