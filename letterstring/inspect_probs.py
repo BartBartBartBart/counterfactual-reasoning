@@ -475,19 +475,13 @@ def compare_prompting_ratios(tokenizer, output_ap, output_bl, correct_answer=Non
 			print(f"Answer of bl and ap different length. No ratio computation.")
 			return None, None, None, None
 
-		if verbose:
-			print(f"\n\nGen indices before removing similar token\n")
-			print(f"AP: {gen_indices_ap}")
-			print(f"BL: {gen_indices_bl}")
-			print(f"\n correct tokens:")
-			print(f"AP: {correct_answer_tokens_ap}")
-			print(f"BL: {correct_answer_tokens_bl}")
-
 		# Focus on different tokens between ap and bl -> remove same tokens
 		idx_to_remove = []
 		for idx, (tok_ap, tok_bl) in enumerate(zip(gen_indices_ap, gen_indices_bl)):
 			if output_ap["generated_ids"][tok_ap] == output_bl["generated_ids"][tok_bl]: 
 				idx_to_remove.append(idx)
+				if verbose:
+					print(f"\nRemoving token {output_ap["generated_ids"][tok_ap]}")
 
 			else:
 				ap_token = tokenizer.decode([output_ap["generated_ids"][tok_ap].item()])
@@ -507,25 +501,20 @@ def compare_prompting_ratios(tokenizer, output_ap, output_bl, correct_answer=Non
 		else:
 			correct_answer_tokens_ap = correct_answer_tokens_ap.new_empty((0,), dtype=correct_answer_tokens_ap.dtype)
 			correct_answer_tokens_bl = correct_answer_tokens_bl.new_empty((0,), dtype=correct_answer_tokens_bl.dtype)
-		
-		if verbose: 
-			print(f"\nAfter removal - gen indices: ")
-			print(f"AP: {gen_indices_ap}")
-			print(f"BL: {gen_indices_bl}")
-			print(f"\ncorrect tokens:")
-			print(f"AP: {correct_answer_tokens_ap}")
-			print(f"BL: {correct_answer_tokens_bl}")
 
+		if len(gen_indices_ap) == 0:
+			print(f"All tokens have been removed. Skipping ratio calculation.")
+			return None, None, None, None
 
 	# compute ratios 
 	if final_answer_start_ap is not None:
 		if verbose:
-			print(f"Calculating Ratio for AP")
+			print(f"\nCalculating Ratio for AP")
 		ratio_ap = get_ratio(tokenizer, scores_ap, generated_ids_ap, gen_indices_ap, correct_answer_tokens_ap, verbose)
 	
 	if final_answer_start_bl is not None:
 		if verbose: 
-			print(f"Calculating Ratio for baseline")
+			print(f"\nCalculating Ratio for baseline")
 		ratio_bl = get_ratio(tokenizer, scores_bl, generated_ids_bl, gen_indices_bl, correct_answer_tokens_bl, verbose)
 	
 	return ratio_ap, flag_ap, ratio_bl, flag_bl
