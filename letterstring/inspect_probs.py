@@ -475,12 +475,13 @@ def compare_prompting_ratios(tokenizer, output_ap, output_bl, correct_answer=Non
 			print(f"Answer of bl and ap different length. No ratio computation.")
 			return None, None, None, None
 
-		print(f"\n\nGen indices before removing similar token\n")
-		print(f"AP: {gen_indices_ap}")
-		print(f"BL: {gen_indices_bl}")
-		print(f"\n correct tokens:")
-		print(f"AP: {correct_answer_tokens_ap}")
-		print(f"BL: {correct_answer_tokens_bl}")
+		if verbose:
+			print(f"\n\nGen indices before removing similar token\n")
+			print(f"AP: {gen_indices_ap}")
+			print(f"BL: {gen_indices_bl}")
+			print(f"\n correct tokens:")
+			print(f"AP: {correct_answer_tokens_ap}")
+			print(f"BL: {correct_answer_tokens_bl}")
 
 		# Focus on different tokens between ap and bl -> remove same tokens
 		idx_to_remove = []
@@ -488,11 +489,11 @@ def compare_prompting_ratios(tokenizer, output_ap, output_bl, correct_answer=Non
 			if output_ap["generated_ids"][tok_ap] == output_bl["generated_ids"][tok_bl]: 
 				idx_to_remove.append(idx)
 
-		# for idx in idx_to_remove[::-1]:
-		# 	if verbose: 
-		# 		print(f"Removing token index {idx} for ratio computation.")
-		# 	del gen_indices_ap[idx], gen_indices_bl[idx]
-		# 	del correct_answer_tokens_ap[idx], correct_answer_tokens_bl[idx]
+			else:
+				ap_token = tokenizer.decode([output_ap["generated_ids"][tok_ap].item()])
+				bl_token = tokenizer.decode([output_bl["generated_ids"][tok_bl].item()])
+				if " "+ap_token == bl_token:
+					idx_to_remove.append(idx)
 
 		to_remove = set(idx_to_remove)
 		keep = [i for i in range(len(gen_indices_ap)) if i not in to_remove]
@@ -507,12 +508,13 @@ def compare_prompting_ratios(tokenizer, output_ap, output_bl, correct_answer=Non
 			correct_answer_tokens_ap = correct_answer_tokens_ap.new_empty((0,), dtype=correct_answer_tokens_ap.dtype)
 			correct_answer_tokens_bl = correct_answer_tokens_bl.new_empty((0,), dtype=correct_answer_tokens_bl.dtype)
 		
-		print(f"\nAfter removal - gen indices: ")
-		print(f"AP: {gen_indices_ap}")
-		print(f"BL: {gen_indices_bl}")
-		print(f"\ncorrect tokens:")
-		print(f"AP: {correct_answer_tokens_ap}")
-		print(f"BL: {correct_answer_tokens_bl}")
+		if verbose: 
+			print(f"\nAfter removal - gen indices: ")
+			print(f"AP: {gen_indices_ap}")
+			print(f"BL: {gen_indices_bl}")
+			print(f"\ncorrect tokens:")
+			print(f"AP: {correct_answer_tokens_ap}")
+			print(f"BL: {correct_answer_tokens_bl}")
 
 
 	# compute ratios 
