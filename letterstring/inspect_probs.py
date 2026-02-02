@@ -466,6 +466,10 @@ def compare_prompting_ratios(tokenizer, output_ap, output_bl, correct_answer=Non
 			flag_bl = "stopped early"
 		else: 
 			flag_bl = "same length"
+	
+	if len(gen_indices_ap) != len(gen_indices_bl):
+		print(f"Answer of bl and ap different length. Returning None.")
+		return None, None, None, None
 
 	# Focus on different tokens between ap and bl -> remove same tokens 
 	idx_to_remove = []
@@ -652,8 +656,7 @@ for num_permuted in [1, 2, 5, 10, 20]:
 
 					ratio_ap, flag_ap, ratio_bl, flag_bl = None, None, None, None
 					if pred_ap != pred_bl:
-						if len(pred_ap) == len(pred_bl):
-							ratio_ap, flag_ap, ratio_bl, flag_bl = compare_prompting_ratios(tokenizer, output_ap, output_bl, correct_answer, args.verbose or t == 0)
+						ratio_ap, flag_ap, ratio_bl, flag_bl = compare_prompting_ratios(tokenizer, output_ap, output_bl, correct_answer, args.verbose or t == 0)
 
 					if args.gen == "nogen":
 						gen_key = "0gen"
