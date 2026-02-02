@@ -475,6 +475,10 @@ def compare_prompting_ratios(tokenizer, output_ap, output_bl, correct_answer=Non
 			print(f"Answer of bl and ap different length. No ratio computation.")
 			return None, None, None, None
 
+		print(f"\n\nGen indices before removing similar token\n")
+		print(f"AP: {gen_indices_ap}")
+		print(f"BL: {gen_indices_bl}")
+
 		# Focus on different tokens between ap and bl -> remove same tokens
 		idx_to_remove = []
 		for idx, _ in enumerate(gen_indices_ap):
@@ -486,12 +490,20 @@ def compare_prompting_ratios(tokenizer, output_ap, output_bl, correct_answer=Non
 				print(f"Removing token index {idx} for ratio computation.")
 			del gen_indices_ap[idx], gen_indices_bl[idx]
 			del correct_answer_tokens_ap[idx], correct_answer_tokens_bl[idx]
+		
+		print(f"After removal: ")
+		print(f"AP: {gen_indices_ap}")
+		print(f"BL: {gen_indices_bl}")
 
 	# compute ratios 
 	if final_answer_start_ap is not None:
+		if verbose:
+			print(f"Calculating Ratio for AP")
 		ratio_ap = get_ratio(tokenizer, scores_ap, generated_ids_ap, gen_indices_ap, correct_answer_tokens_ap, verbose)
 	
 	if final_answer_start_bl is not None:
+		if verbose: 
+			print(f"Calculating Ratio for baseline")
 		ratio_bl = get_ratio(tokenizer, scores_bl, generated_ids_bl, gen_indices_bl, correct_answer_tokens_bl, verbose)
 	
 	return ratio_ap, flag_ap, ratio_bl, flag_bl
@@ -659,6 +671,8 @@ for num_permuted in [1, 2, 5, 10, 20]:
 					ratio_ap, flag_ap, ratio_bl, flag_bl = None, None, None, None
 					if pred_ap != pred_bl:
 						ratio_ap, flag_ap, ratio_bl, flag_bl = compare_prompting_ratios(tokenizer, output_ap, output_bl, correct_answer, args.verbose or t == 0)
+					elif args.verbose: 
+						print(f"Skipping ratio calculation because answers are the same.")	
 
 					if args.gen == "nogen":
 						gen_key = "0gen"
