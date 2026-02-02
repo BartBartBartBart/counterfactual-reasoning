@@ -441,6 +441,8 @@ def compare_prompting_ratios(tokenizer, output_ap, output_bl, correct_answer=Non
 	final_answer_start_ap, final_answer_end_ap = find_final_answer(output_ap["generated_ids"], verbose)
 	final_answer_start_bl, final_answer_end_bl = find_final_answer(output_bl["generated_ids"], verbose)
 	gen_indices_ap, gen_indices_bl = None, None
+	ratio_ap, ratio_bl = None, None
+	flag_ap, flag_bl = None, None
 
 	# If correct answer is provided, calculate probability for the correct answer specifically
 	if final_answer_start_ap is not None and final_answer_end_ap is not None:
@@ -486,8 +488,6 @@ def compare_prompting_ratios(tokenizer, output_ap, output_bl, correct_answer=Non
 			del correct_answer_tokens_ap[idx], correct_answer_tokens_bl[idx]
 
 	# compute ratios 
-	ratio_ap, ratio_bl = None, None
-
 	if final_answer_start_ap is not None:
 		ratio_ap = get_ratio(tokenizer, scores_ap, generated_ids_ap, gen_indices_ap, correct_answer_tokens_ap, verbose)
 	
