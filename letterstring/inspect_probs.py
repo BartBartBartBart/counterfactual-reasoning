@@ -481,7 +481,7 @@ def compare_prompting_ratios(tokenizer, output_ap, output_bl, correct_answer=Non
 
 		# Focus on different tokens between ap and bl -> remove same tokens
 		idx_to_remove = []
-		for idx, (tok_ap, tok_bl) in zip(gen_indices_ap, gen_indices_bl):
+		for idx, (tok_ap, tok_bl) in enumerate(zip(gen_indices_ap, gen_indices_bl)):
 			if output_ap["generated_ids"][tok_ap] == output_bl["generated_ids"][tok_bl]: 
 				idx_to_remove.append(idx)
 
