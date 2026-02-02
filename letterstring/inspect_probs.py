@@ -613,7 +613,7 @@ for num_permuted in [1, 2, 5, 10, 20]:
 				# Create prompt
 				# messages = create_prompt(args.promptstyle, prob, alph_string)
 				messages_ap = create_prompt("analogical", prob, alph_string) # Analogical Prompting
-				messages_bl = create_prompt("minmal", prob, alph_string) # Baseline
+				messages_bl = create_prompt("minimal", prob, alph_string) # Baseline
 
 				# If verbose or first trial
 				if args.verbose or t == 0:
@@ -722,8 +722,7 @@ for num_permuted in [1, 2, 5, 10, 20]:
 
 	# Store results for this num_permuted
 	for gen in gen_types:
-		if args.promptstyle == "analogical":
-			average_exemplar_probs[gen][num_permuted] = exemplar_probs_list[gen]
+		average_exemplar_probs[gen][num_permuted] = exemplar_probs_list[gen]
 		average_final_answer_probs[gen][num_permuted] = final_answer_probs[gen]
 		average_ratios[gen][num_permuted] = ratios_list[gen]
 		
@@ -739,10 +738,9 @@ for gen in gen_types:
 		if num_permuted in average_final_answer_probs[gen]:
 			print(f"\nNum permuted letters: {num_permuted}", flush=True)
 
-			if args.promptstyle == "analogical":
-				probs_by_method = average_exemplar_probs[gen].get(num_permuted, {})
+			probs_by_method = average_exemplar_probs[gen].get(num_permuted, {})
 				
-				print(f"  Exemplar probabilities:", flush=True)
+			print(f"  Exemplar probabilities:", flush=True)
 			
 			for method, probs_dict in probs_by_method.items():
 				print(f"    {method}:", flush=True)
