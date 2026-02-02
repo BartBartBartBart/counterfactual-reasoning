@@ -650,6 +650,7 @@ for num_permuted in [1, 2, 5, 10, 20]:
 					final_answer_prob_ap = extract_final_answer_prob(tokenizer, output_ap, args.verbose or t == 0)
 					final_answer_prob_bl = extract_final_answer_prob(tokenizer, output_bl, args.verbose or t == 0)
 
+					ratio_ap, flag_ap, ratio_bl, flag_bl = None, None, None, None
 					if pred_ap != pred_bl:
 						if len(pred_ap) == len(pred_bl):
 							ratio_ap, flag_ap, ratio_bl, flag_bl = compare_prompting_ratios(tokenizer, output_ap, output_bl, correct_answer, args.verbose or t == 0)
@@ -682,15 +683,23 @@ for num_permuted in [1, 2, 5, 10, 20]:
 						if method == "analogical":
 							correct_key  = "correct" if correct_ap else "incorrect"
 							final_answer_prob = final_answer_prob_ap
-							ratio = ratio_ap
-							flag = flag_ap
+							if ratio_ap is not None: 
+								ratio = ratio_ap
+								flag = flag_ap
+							else: 
+								ratio = None
+
 							exemplar_probs_list[gen_key][method][correct_key].extend(total_exemplar_probs)
 							exemplar_probs_list[gen_key][method]["total"].extend(total_exemplar_probs)
+							
 						elif method == "minimal":
 							correct_key = "correct" if correct_bl else "incorrect"
 							final_answer_prob = final_answer_prob_bl
-							ratio = ratio_bl
-							flag = flag_bl
+							if ratio_bl is not None: 
+								ratio = ratio_bl
+								flag = flag_bl
+							else:
+								ratio = None
 
 						if final_answer_prob is not None:
 							final_answer_probs[gen_key][method][correct_key].append(final_answer_prob)
