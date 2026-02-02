@@ -691,7 +691,7 @@ for num_permuted in [1, 2, 5, 10, 20]:
 
 							exemplar_probs_list[gen_key][method][correct_key].extend(total_exemplar_probs)
 							exemplar_probs_list[gen_key][method]["total"].extend(total_exemplar_probs)
-							
+
 						elif method == "minimal":
 							correct_key = "correct" if correct_bl else "incorrect"
 							final_answer_prob = final_answer_prob_bl
@@ -710,13 +710,13 @@ for num_permuted in [1, 2, 5, 10, 20]:
 							if args.verbose:
 								print(f"Ratio for {method} with flag {flag}: {ratio}")
 
-						# Clean up GPU memory after generation
-						del generated_ids_ap, generated_ids_bl
-						del scores_ap, scores_bl
-						del full_text_ap, full_text_bl
-						del output_ap, output_bl
-						if torch.cuda.is_available():
-							torch.cuda.empty_cache()
+					# Clean up GPU memory after generation
+					del generated_ids_ap, generated_ids_bl
+					del scores_ap, scores_bl
+					del full_text_ap, full_text_bl
+					del output_ap, output_bl
+					if torch.cuda.is_available():
+						torch.cuda.empty_cache()
 
 				elif args.use_saved:
 					print("Not implemented.")
