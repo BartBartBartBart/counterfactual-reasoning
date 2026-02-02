@@ -150,6 +150,79 @@ def get_probs(messages, model, tokenizer):
 	full_text = tokenizer.decode(generated_ids, skip_special_tokens=True)
 	return generated_ids, scores, full_text
 
+def determine_correctness(pred, current_target):
+	"""Filter output for answer and compare with ground truth"""
+	# Filter the answer, take only the content inside double brackets [[ answer ]]
+	if '[[' in pred and ']]' in pred:
+		start_idx = pred.index('[[') + 2
+		end_idx = pred.index(']]')
+		pred = pred[start_idx:end_idx].strip()
+		pred = pred.strip(" '").replace(" ", "").lower()
+	else:
+		pred = pred.replace(" ", "").lower()
+	# true = full_tgt_letters
+	true = current_target
+	if type(true[0]) == np.int64:
+		true = [str(x) for x in true]
+	true = ''.join(true).lower()
+	if args.verbose:
+		print(f'Pred: {pred}, True: {true}')
+	if pred == true:
+		correct = True
+	elif true in pred:
+		correct = check_partly_correct(true, pred)
+	else:
+		correct = False
+	return correct, true
+
+def find_final_answer(generated_ids, verbose=False):
+	"""Search the answer for double or single brackets."""
+	# Search for opening double bracket
+	final_answer_start = None
+	for token_idx, token_id in enumerate(generated_ids):
+		token_text = tokenizer.decode([token_id])
+		if "[[" in token_text:
+			final_answer_start = token_idx
+			break
+	
+	if final_answer_start is None:
+		if verbose:
+			print("No opening double bracket found for final answer\n")
+		# Take last open bracket as start
+		for token_idx in range(len(generated_ids)-1, -1, -1):
+			token_text = tokenizer.decode([generated_ids[token_idx]])
+			if "[" in token_text:
+				final_answer_start = token_idx
+				if verbose:
+					print(f"Using last single opening bracket at token index {final_answer_start} as start for final answer\n")
+				break
+		if final_answer_start is None:
+			return None, None
+	
+	# Search for closing double bracket
+	final_answer_end = None
+	for token_idx in range(final_answer_start + 1, len(generated_ids)):
+		token_text = tokenizer.decode([token_id for token_id in generated_ids[final_answer_start:token_idx+1]])
+		if "]]" in token_text:
+			final_answer_end = token_idx
+			break
+	
+	if final_answer_end is None:
+		if verbose:
+			print("No closing double bracket found for final answer\n")
+		# Take last closing bracket as end
+		for token_idx in range(len(generated_ids)-1, final_answer_start, -1):
+			token_text = tokenizer.decode([generated_ids[token_idx]])
+			if "]" in token_text:
+				final_answer_end = token_idx
+				if verbose:
+					print(f"Using last single closing bracket at token index {final_answer_end} as end for final answer\n")
+				break
+		if final_answer_end is None:
+			return None, None
+
+	return final_answer_start, final_answer_end	
+
 def calculate_token_probability(tokenizer, scores, generated_ids, token_indices, verbose=False, label=""):
 	"""Calculate total probability for a sequence of token indices."""
 	logprob = 0.0
@@ -177,7 +250,7 @@ def calculate_token_probability(tokenizer, scores, generated_ids, token_indices,
 	
 	return total_prob
 
-def extract_exemplar_probs(tokenizer, scores, generated_ids, verbose=False):
+def extract_exemplar_probs(tokenizer, output_ap, verbose=False):
 	"""Extract probabilities for the first 3 exemplars."""
 	prob_per_exemplar = []
 	total_probs = []
@@ -186,6 +259,9 @@ def extract_exemplar_probs(tokenizer, scores, generated_ids, verbose=False):
 	closing_count = 0
 	exemplar_count = 0
 	exemplar_token_indices = []
+
+	generated_ids = output_ap["generated_ids"]
+	scores = output_ap["scores"]
 
 	if verbose:
 		print(f"Total generated tokens: {len(generated_ids)}")
@@ -233,174 +309,187 @@ def extract_exemplar_probs(tokenizer, scores, generated_ids, verbose=False):
 
 	return prob_per_exemplar, total_probs
 
-def extract_final_answer_prob(tokenizer, scores, generated_ids, correct_answer=None, verbose=False):
-	"""Extract probability for the final answer between double brackets.
-
-	This function finds the final inner answer (the content between the last '[' and the next ']'
-	inside the double-bracket final answer) and computes:
-	- final_answer_prob: product probability across the full bracketed final answer span (as before)
-	- generated_answer_prob: geometric mean (length-normalized) probability for the entire generated final answer
-	- correct_answer_prob: geometric mean (length-normalized) probability for the correct answer when left-aligned to the generated answer tokens
-	
-	If `correct_answer` is not provided the function returns only `final_answer_prob`.
-	"""
+def extract_final_answer_prob(tokenizer, output, verbose=False):
+	"""Extract probability for the final answer between double brackets."""
 	final_answer_prob = None
+
+	generated_ids = output["generated_ids"]
+	scores = output["scores"]
 	
-	# Search for opening double bracket
-	final_answer_start = None
-	for token_idx, token_id in enumerate(generated_ids):
-		token_text = tokenizer.decode([token_id])
-		if "[[" in token_text:
-			final_answer_start = token_idx
-			break
-	
-	if final_answer_start is None:
-		if verbose:
-			print("No opening double bracket found for final answer\n")
-		# Take last open bracket as start
-		for token_idx in range(len(generated_ids)-1, -1, -1):
-			token_text = tokenizer.decode([generated_ids[token_idx]])
-			if "[" in token_text:
-				final_answer_start = token_idx
-				if verbose:
-					print(f"Using last single opening bracket at token index {final_answer_start} as start for final answer\n")
-				break
-		if final_answer_start is None:
-			return final_answer_prob
-	
-	# Search for closing double bracket
-	final_answer_end = None
-	for token_idx in range(final_answer_start + 1, len(generated_ids)):
-		token_text = tokenizer.decode([token_id for token_id in generated_ids[final_answer_start:token_idx+1]])
-		if "]]" in token_text:
-			final_answer_end = token_idx
-			break
-	
-	if final_answer_end is None:
-		if verbose:
-			print("No closing double bracket found for final answer\n")
-		# Take last closing bracket as end
-		for token_idx in range(len(generated_ids)-1, final_answer_start, -1):
-			token_text = tokenizer.decode([generated_ids[token_idx]])
-			if "]" in token_text:
-				final_answer_end = token_idx
-				if verbose:
-					print(f"Using last single closing bracket at token index {final_answer_end} as end for final answer\n")
-				break
-		if final_answer_end is None:
-			return final_answer_prob
-	
+	# Filter for final answer
+	final_answer_start, final_answer_end = find_final_answer(generated_ids, verbose)
+
+	# No final answer found
+	if final_answer_start is None or final_answer_end is None: 
+		return final_answer_prob
+
 	# Extract token indices between brackets
 	final_answer_token_indices = list(range(final_answer_start, final_answer_end + 1))
 	
 	# Calculate probability
 	final_answer_prob = calculate_token_probability(tokenizer, scores, generated_ids, final_answer_token_indices,
 													verbose=verbose, label="final answer")
-	
-	# If correct answer is provided, calculate probability for the correct answer specifically
-	if correct_answer is not None:
-		flag = None
-
-		# Identify the generated final inner answer (the part between the last '[' and the next ']')
-		last_open = None
-		for token_idx in range(final_answer_start, final_answer_end + 1):
-			token_text = tokenizer.decode([generated_ids[token_idx]])
-			if "[" in token_text:
-				last_open = token_idx
-		
-		if last_open is None:
-			# fallback: use the range between final_answer_start and final_answer_end
-			gen_answer_start = final_answer_start + 1
-		else:
-			gen_answer_start = last_open + 1
-		
-		# Find corresponding closing bracket
-		gen_answer_end = None
-		for token_idx in range(gen_answer_start, final_answer_end + 1):
-			token_text = tokenizer.decode([generated_ids[token_idx]])
-			if "]" in token_text:
-				gen_answer_end = token_idx
-				break
-		
-		if gen_answer_end is None:
-			# fallback: use up to final_answer_end (exclusive)
-			gen_answer_end = final_answer_end
-		
-		# Indices of tokens that form the generated final answer (excluding brackets)
-		gen_indices = list(range(gen_answer_start, gen_answer_end))
-
-		# Tokenize correct answer as if it was written with spaces: 'pqrt' -> tokenize as 'p q r t'
-		# First character without space, subsequent characters with leading space
-		correct_answer_tokens = []
-		clean_answer = correct_answer.replace(" ", "")  # Remove any existing spaces
-		for i, char in enumerate(clean_answer):
-			if i <= len(gen_indices) - 1:
-				gen_token_id = generated_ids[gen_indices[i]].item()
-				generated_token = tokenizer.decode([gen_token_id])
-				if generated_token.startswith(" "):
-					# Subsequent characters with leading space
-					char_tokens = tokenizer(" " + char, return_tensors="pt")["input_ids"][0]
-				else:
-					# First character without space
-					char_tokens = tokenizer(char, return_tensors="pt")["input_ids"][0]
-			else: 
-				break				
-			correct_answer_tokens.extend(char_tokens.tolist())
-
-		if len(correct_answer_tokens) < len(gen_indices):
-			flag = "stopped late"
-			# # Pad correct_answer_tokens with EOS token ids so its length matches the generated prediction length
-			# diff = len(gen_indices) - len(correct_answer_tokens)
-			# # Prefer the tokenizer's eos_token_id, fall back to pad_token_id if necessary
-			# eos_id = tokenizer.eos_token_id if getattr(tokenizer, 'eos_token_id', None) is not None else getattr(tokenizer, 'pad_token_id', None)
-			# if eos_id is None:
-			# 	raise RuntimeError("Tokenizer has neither eos_token_id nor pad_token_id to use for padding")
-			# eos_ids = [int(eos_id)] * diff
-			# if verbose:
-			# 	print(f"Padding correct answer tokens with {diff} EOS ids ({eos_id})")
-			# correct_answer_tokens.extend(eos_ids)
-		elif len(correct_answer_tokens) > len(gen_indices):
-			flag = "stopped early"
-			print(f"Shorter given answer detected.")
-		else: 
-			flag = "same length"
-		correct_answer_tokens = torch.tensor(correct_answer_tokens, device=generated_ids.device)		
-		
-		# LEFT-align the correct answer to the generated final answer
-		correct_log_sum = 0.0
-		gen_log_sum = 0.0 
-		for i, idx in enumerate(gen_indices):
-			if i >= len(correct_answer_tokens):
-				break
-			if idx >= len(scores):
-				if verbose:
-					print(f"  WARNING: no score for token index {idx}")
-				continue
-			logits = scores[idx][0]
-			logprobs = torch.log_softmax(logits, dim=-1)
-			gen_token_id = generated_ids[idx].item()
-			gen_logp = logprobs[gen_token_id].item()
-			correct_token_id = correct_answer_tokens[i].item()
-			correct_logp = logprobs[correct_token_id].item()
-			if verbose:
-				gen_text = tokenizer.decode([gen_token_id])
-				correct_text = tokenizer.decode([correct_token_id])
-				print(f"Position {i}: generated '{gen_text}' (id {gen_token_id}) w logp={gen_logp}, correct '{correct_text}' (id {correct_token_id}), correct_logp={correct_logp}")
-			gen_log_sum += gen_logp
-			correct_log_sum += correct_logp
-		
-		generated_answer_prob = np.exp(gen_log_sum)
-		correct_answer_prob = np.exp(correct_log_sum)
-		ratio = np.exp(correct_log_sum - gen_log_sum)
-
-		if verbose: 
-			print(f"logp(correct)={correct_log_sum}, logp(given)={gen_log_sum}")
-			print(f"log Ratio=logp(correct)-logp(given)={correct_log_sum}-{gen_log_sum}={correct_log_sum-gen_log_sum}")
-			print(f"Ratio = np.exp(log Ratio) = np.exp({correct_log_sum-gen_log_sum}) = {ratio}")
-		
-		return final_answer_prob, ratio, flag
 
 	return final_answer_prob
+
+def get_relevant_tokens(final_answer_start, final_answer_end, correct_answer, output):
+	generated_ids = output["generated_ids"]
+	scores = output["generated_ids"]
+
+	# Identify the generated final inner answer (the part between the last '[' and the next ']')
+	last_open = None
+	for token_idx in range(final_answer_start, final_answer_end + 1):
+		token_text = tokenizer.decode([generated_ids[token_idx]])
+		if "[" in token_text:
+			last_open = token_idx
+	
+	if last_open is None:
+		# fallback: use the range between final_answer_start and final_answer_end
+		gen_answer_start = final_answer_start + 1
+	else:
+		gen_answer_start = last_open + 1
+	
+	# Find corresponding closing bracket
+	gen_answer_end = None
+	for token_idx in range(gen_answer_start, final_answer_end + 1):
+		token_text = tokenizer.decode([generated_ids[token_idx]])
+		if "]" in token_text:
+			gen_answer_end = token_idx
+			break
+	
+	if gen_answer_end is None:
+		# fallback: use up to final_answer_end (exclusive)
+		gen_answer_end = final_answer_end
+	
+	# Indices of tokens that form the generated final answer (excluding brackets)
+	gen_indices = list(range(gen_answer_start, gen_answer_end))
+
+	# Tokenize correct answer as if it was written with spaces: 'pqrt' -> tokenize as 'p q r t'
+	# First character without space, subsequent characters with leading space
+	correct_answer_tokens = []
+	clean_answer = correct_answer.replace(" ", "")  # Remove any existing spaces
+	for i, char in enumerate(clean_answer):
+		if i <= len(gen_indices) - 1:
+			gen_token_id = generated_ids[gen_indices[i]].item()
+			generated_token = tokenizer.decode([gen_token_id])
+			if generated_token.startswith(" "):
+				# Subsequent characters with leading space
+				char_tokens = tokenizer(" " + char, return_tensors="pt")["input_ids"][0]
+			else:
+				# First character without space
+				char_tokens = tokenizer(char, return_tensors="pt")["input_ids"][0]
+		else: 
+			break				
+		correct_answer_tokens.extend(char_tokens.tolist())
+	correct_answer_tokens = torch.tensor(correct_answer_tokens, device=generated_ids.device)
+
+	return gen_indices, correct_answer_tokens		
+
+
+def get_ratio(tokenizer, scores, generated_ids, gen_indices, correct_answer_tokens, verbose=False):
+	"""
+	Calculate the following ratio using log probability:
+	Ratio = p(correct answer)/p(given answer)
+
+	In case of Analogical Prompting:
+	Ratio = p(correct answer|exemplars)/p(given answer|exemplars)
+	"""
+	# LEFT-align the correct answer to the generated final answer
+	correct_log_sum = 0.0
+	gen_log_sum = 0.0 
+	for i, idx in enumerate(gen_indices):
+		if i >= len(correct_answer_tokens):
+			break
+		if idx >= len(scores):
+			if verbose:
+				print(f"  WARNING: no score for token index {idx}")
+			continue
+		logits = scores[idx][0]
+		logprobs = torch.log_softmax(logits, dim=-1)
+		gen_token_id = generated_ids[idx].item()
+		gen_logp = logprobs[gen_token_id].item()
+		correct_token_id = correct_answer_tokens[i].item()
+		correct_logp = logprobs[correct_token_id].item()
+		if verbose:
+			gen_text = tokenizer.decode([gen_token_id])
+			correct_text = tokenizer.decode([correct_token_id])
+			print(f"Position {i}: generated '{gen_text}' (id {gen_token_id}) w logp={gen_logp}, correct '{correct_text}' (id {correct_token_id}), correct_logp={correct_logp}")
+		gen_log_sum += gen_logp
+		correct_log_sum += correct_logp
+	
+	# generated_answer_prob = np.exp(gen_log_sum)
+	# correct_answer_prob = np.exp(correct_log_sum)
+	ratio = np.exp(correct_log_sum - gen_log_sum)
+
+	if verbose: 
+		print(f"logp(correct)={correct_log_sum}, logp(given)={gen_log_sum}")
+		print(f"log Ratio=logp(correct)-logp(given)={correct_log_sum}-{gen_log_sum}={correct_log_sum-gen_log_sum}")
+		print(f"Ratio = np.exp(log Ratio) = np.exp({correct_log_sum-gen_log_sum}) = {ratio}")
+	
+	return ratio
+
+def compare_prompting_ratios(tokenizer, output_ap, output_bl, correct_answer=None, verbose=False): 
+	"""
+	Compute ratio using the non-similar tokens between ap and bl.  
+		
+	:param tokenizer: Description
+	:param output_ap: Description
+	:param output_bl: Description
+	:param correct_answer: Description
+	:param verbose: Description
+	"""
+	final_answer_start_ap, final_answer_end_ap = find_final_answer(output_ap["generated_ids"], verbose)
+	final_answer_start_bl, final_answer_end_bl = find_final_answer(output_bl["generated_ids"], verbose)
+
+	# If correct answer is provided, calculate probability for the correct answer specifically
+	if final_answer_start_ap is not None and final_answer_end_ap is not None:
+		flag_ap = None
+
+		gen_indices_ap, correct_answer_tokens_ap = get_relevant_tokens(final_answer_start_ap, final_answer_end_ap, correct_answer, output_ap)
+
+		if len(correct_answer_tokens_ap) < len(gen_indices_ap):
+			flag_ap = "stopped late"
+		elif len(correct_answer_tokens_ap) > len(gen_indices_ap):
+			flag_ap = "stopped early"
+		else: 
+			flag_ap = "same length"
+	
+	# If correct answer is provided, calculate probability for the correct answer specifically
+	if final_answer_start_bl is not None and final_answer_end_bl is not None:
+		flag_bl = None
+
+		gen_indices_bl, correct_answer_tokens_bl = get_relevant_tokens(final_answer_start_bl, final_answer_end_bl, correct_answer, output_bl)
+
+		if len(correct_answer_tokens_bl) < len(gen_indices_bl):
+			flag_bl = "stopped late"
+		elif len(correct_answer_tokens_bl) > len(gen_indices_bl):
+			flag_bl = "stopped early"
+		else: 
+			flag_bl = "same length"
+
+	# Focus on different tokens between ap and bl -> remove same tokens 
+	idx_to_remove = []
+	for idx, _ in enumerate(gen_indices_ap):
+		if gen_indices_ap[idx] == gen_indices_bl[idx]:
+			idx_to_remove.append(idx)
+
+	for idx in idx_to_remove[::-1]:
+		if verbose: 
+			print(f"Removing token index {idx} for ratio computation.")
+		del gen_indices_ap[idx], gen_indices_bl[idx]
+		del correct_answer_tokens_ap[idx], correct_answer_tokens_bl[idx]
+
+	# compute ratios 
+	ratio_ap, ratio_bl = None, None
+
+	if final_answer_start_ap is not None:
+		ratio_ap = get_ratio(tokenizer, scores_ap, generated_ids_ap, gen_indices_ap, correct_answer_tokens_ap, verbose)
+	
+	if final_answer_start_bl is not None:
+		ratio_bl = get_ratio(tokenizer, scores_bl, generated_ids_bl, gen_indices_bl, correct_answer_tokens_bl, verbose)
+	
+	return ratio_ap, flag_ap, ratio_bl, flag_bl
+
 
 if args.use_saved and (not args.model or not args.promptstyle):
 	print("When using --use_saved, both --model and --promptstyle must be specified.")
@@ -468,19 +557,19 @@ else:
 	problem_dir = "gen"
 
 # Initialize data structures
-average_exemplar_probs = {gen: {'correct': [], 'incorrect': [], 'total': []} for gen in gen_types}
-average_final_answer_probs = {gen: {'correct': [], 'incorrect': [], 'total': []} for gen in gen_types}
-average_ratios = {gen: {'same length': [], 'stopped early': [], 'stopped late': []} for gen in gen_types}
-response_dict_all = {} # Stores responses for all problems, together with their scores and generation_ids in npz format
+average_exemplar_probs = {gen: {} for gen in gen_types}
+average_final_answer_probs = {gen: {} for gen in gen_types}
+average_ratios = {gen: {} for gen in gen_types}
+# response_dict_all = {} # Stores responses for all problems, together with their scores and generation_ids in npz format
 
 # Collect average exemplar probability for each number of permuted letters
 for num_permuted in [1, 2, 5, 10, 20]:
 	# response_dict = {}
 
 	# Initialize lists for this num_permuted
-	exemplar_probs_list = {gen: {'correct': [], 'incorrect': [], 'total': []} for gen in gen_types}
-	final_answer_probs = {gen: {'correct': [], 'incorrect': [], 'total': []} for gen in gen_types}
-	ratios_list = {gen: {'same length': [], 'stopped early': [], 'stopped late': []} for gen in gen_types}
+	exemplar_probs_list = {gen: {"analogical": {'correct': [], 'incorrect': [], 'total': []}, "minimal": {'correct': [], 'incorrect': [], 'total': []}} for gen in gen_types}
+	final_answer_probs = {gen: {"analogical": {'correct': [], 'incorrect': [], 'total': []}, "minimal": {'correct': [], 'incorrect': [], 'total': []}} for gen in gen_types}
+	ratios_list = {gen: {"analogical": {'same length': [], 'stopped early': [], 'stopped late': []}, "minimal": {'same length': [], 'stopped early': [], 'stopped late': []}} for gen in gen_types}
 
 	if args.gen == "nogen":
 		all_prob = np.load(f'./problems/nogen/all_prob_{num_permuted}_7_human.npz', allow_pickle=True)['all_prob']
@@ -506,7 +595,7 @@ for num_permuted in [1, 2, 5, 10, 20]:
 		alph_string = ' '.join(shuffled_alphabet)
 
 		# Evaluate
-		N_trials_per_prob_type = 10
+		N_trials_per_prob_type = 1 # 10
 		count = 0
 		for p in range(N_prob_types):
 			if prob_types[p] == 'attn':
@@ -522,66 +611,48 @@ for num_permuted in [1, 2, 5, 10, 20]:
 				current_target = all_prob.item()[alph][prob_types[p]]['prob'][t][1][1]
 
 				# Create prompt
-				messages = create_prompt(args.promptstyle, prob, alph_string)
+				# messages = create_prompt(args.promptstyle, prob, alph_string)
+				messages_ap = create_prompt("analogical", prob, alph_string) # Analogical Prompting
+				messages_bl = create_prompt("minmal", prob, alph_string) # Baseline
 
 				# If verbose or first trial
 				if args.verbose or t == 0:
 					print("\n=== PROMPT ===\n", flush=True)
-					print(f"System message: {messages[0]['content']}\n", flush=True)
-					print(f"User message: {messages[1]['content']}\n", flush=True)
+					print(f"System message: {messages_ap[0]['content']}\n", flush=True)
+					print(f"User message: {messages_ap[1]['content']}\n", flush=True)
 					print("\n--- TARGET LETTERS ---\n", flush=True)
 					print(current_target, flush=True)
 
 				# Get response
 				if args.model.startswith("Qwen") and not args.use_saved:
-					generated_ids, scores, full_text = get_probs(messages, model, tokenizer)
-					pred = clean_text(full_text)
+					generated_ids_ap, scores_ap, full_text_ap = get_probs(messages_ap, model, tokenizer)
+					generated_ids_bl, scores_bl, full_text_bl = get_probs(messages_bl, model, tokenizer)
+					output_ap = {"generated_ids": generated_ids_ap, "scores": scores_ap}
+					output_bl = {"generated_ids": generated_ids_bl, "scores": scores_bl}
+					pred_ap = clean_text(full_text_ap)
+					pred_bl = clean_text(full_text_bl)
 
 					if args.verbose or t == 0:
-						print("\n=== RESPONSE ===\n", flush=True)
-						print(pred, flush=True)
+						print("\n=== RESPONSE AP ===\n", flush=True)
+						print(pred_ap, flush=True)
+						print("\n=== RESPONSE Baseline ===\n", flush=True)
+						print(pred_bl, flush=True)
 					
 					# Determine correctness
-					# Filter the answer, take only the content inside double brackets [[ answer ]]
-					if '[[' in pred and ']]' in pred:
-						start_idx = pred.index('[[') + 2
-						end_idx = pred.index(']]')
-						pred = pred[start_idx:end_idx].strip()
-						pred = pred.strip(" '").replace(" ", "").lower()
-					else:
-						pred = pred.replace(" ", "").lower()
-					# true = full_tgt_letters
-					true = current_target
-					if type(true[0]) == np.int64:
-						true = [str(x) for x in true]
-					true = ''.join(true).lower()
-					if args.verbose:
-						print(f'Pred: {pred}, True: {true}')
-					if pred == true:
-						correct = True
-					elif true in pred:
-						correct = check_partly_correct(true, pred)
-					else:
-						correct = False
-					if args.verbose:
-						print(f"Final decision on correctness: {correct}", flush=True)
+					correct_ap, correct_answer = determine_correctness(pred_ap, current_target)
+					correct_bl, correct_answer = determine_correctness(pred_bl, current_target)
 
-					if args.promptstyle == "analogical":
-						probs_per_exemplar, total_exemplar_probs = extract_exemplar_probs(tokenizer, scores, generated_ids, args.verbose or t == 0)
-					res = extract_final_answer_prob(
-						tokenizer=tokenizer,
-						scores=scores,
-						generated_ids=generated_ids,
-						correct_answer=true,
-						verbose=args.verbose or t == 0
-					)
-					# Function may return a single value or a tuple
-					if isinstance(res, tuple):
-						final_answer_prob, ratio, flag = res
-					else:
-						final_answer_prob = res
-						ratio = None
-						flag = None
+					if args.verbose:
+						print(f"Final decision on correctness for AP: {correct_ap}", flush=True)
+						print(f"Final decision on correctness for BL: {correct_bl}", flush=True)
+
+					probs_per_exemplar, total_exemplar_probs = extract_exemplar_probs(tokenizer, output_ap, args.verbose or t == 0)
+					final_answer_prob_ap = extract_final_answer_prob(tokenizer, output_ap, args.verbose or t == 0)
+					final_answer_prob_bl = extract_final_answer_prob(tokenizer, output_bl, args.verbose or t == 0)
+
+					if pred_ap != pred_bl:
+						if len(pred_ap) == len(pred_bl):
+							ratio_ap, flag_ap, ratio_bl, flag_bl = compare_prompting_ratios(tokenizer, output_ap, output_bl, correct_answer, args.verbose or t == 0)
 
 					if args.gen == "nogen":
 						gen_key = "0gen"
@@ -591,15 +662,6 @@ for num_permuted in [1, 2, 5, 10, 20]:
 						gen_key = "3gen"
 					else:
 						gen_key = "1gen"
-
-					if ratio is not None and flag is not None: 
-						if args.verbose: 
-							print(f"Ratio: {ratio}")
-							print(f"Flag: {flag}")
-						ratios_list[gen_key][flag].append(ratio)
-					else:
-						if args.verbose:
-							print("Ratio: N/A (missing or zero probabilities)")
 
 					# response_dict[alph]['problems'][(prob_types[p], t)] = {
 					# 	'prompt': messages,
@@ -616,39 +678,40 @@ for num_permuted in [1, 2, 5, 10, 20]:
 						# response_dict[alph]['problems'][(prob_types[p], t)]['exemplar_probs'] = probs_per_exemplar
 						# response_dict[alph]['problems'][(prob_types[p], t)]['total_exemplar_probs'] = total_exemplar_probs
 
+					for method in ["analogical", "minimal"]:
+						if method == "analogical":
+							correct_key  = "correct" if correct_ap else "incorrect"
+							final_answer_prob = final_answer_prob_ap
+							ratio = ratio_ap
+							flag = flag_ap
+							exemplar_probs_list[gen_key][method][correct_key].extend(total_exemplar_probs)
+							exemplar_probs_list[gen_key][method]["total"].extend(total_exemplar_probs)
+						elif method == "minimal":
+							correct_key = "correct" if correct_bl else "incorrect"
+							final_answer_prob = final_answer_prob_bl
+							ratio = ratio_bl
+							flag = flag_bl
 
-					if correct: 
-						if args.promptstyle == "analogical":
-							exemplar_probs_list[gen_key]['correct'].extend(total_exemplar_probs)
 						if final_answer_prob is not None:
-							final_answer_probs[gen_key]['correct'].append(final_answer_prob)
-						
-					else:
-						if args.promptstyle == "analogical":
-							exemplar_probs_list[gen_key]['incorrect'].extend(total_exemplar_probs)
-						if final_answer_prob is not None:
-							final_answer_probs[gen_key]['incorrect'].append(final_answer_prob)
-						
-					# Also store total
-					if args.promptstyle == "analogical":
-						exemplar_probs_list[gen_key]['total'].extend(total_exemplar_probs)
-					if final_answer_prob is not None:
-						final_answer_probs[gen_key]['total'].append(final_answer_prob)
+							final_answer_probs[gen_key][method][correct_key].append(final_answer_prob)
+							final_answer_probs[gen_key][method]["total"].append(final_answer_prob)
 
-					# Clean up GPU memory after generation
-					del generated_ids, scores, full_text
-					if torch.cuda.is_available():
-						torch.cuda.empty_cache()
+						if ratio is not None: 
+							ratios_list[gen_key][method][flag].append(ratio)
+							if args.verbose:
+								print(f"Ratio for {method} with flag {flag}: {ratio}")
+
+						# Clean up GPU memory after generation
+						del generated_ids_ap, generated_ids_bl
+						del scores_ap, scores_bl
+						del full_text_ap, full_text_bl
+						del output_ap, output_bl
+						if torch.cuda.is_available():
+							torch.cuda.empty_cache()
+
 				elif args.use_saved:
-					# Load saved responses
-					saved_filename = f'./saved_responses/responses_{args.promptstyle}_{problem_dir}_{args.model.replace("/", "_")}_responses.npz'
-					if not os.path.exists(saved_filename):
-						print(f"Saved response file {saved_filename} not found.", flush=True)
-						continue
-					saved_data = np.load(saved_filename, allow_pickle=True)
-					print("To be implemented...", flush=True)
-					sys.exit()
-		
+					print("Not implemented.")
+
 	# Store all responses for this num_permuted
 	# response_dict_all[num_permuted] = response_dict
 	
@@ -677,36 +740,42 @@ for gen in gen_types:
 			print(f"\nNum permuted letters: {num_permuted}", flush=True)
 
 			if args.promptstyle == "analogical":
-				probs_dict = average_exemplar_probs[gen][num_permuted]
-			
+				probs_by_method = average_exemplar_probs[gen].get(num_permuted, {})
+				
 				print(f"  Exemplar probabilities:", flush=True)
 			
+			for method, probs_dict in probs_by_method.items():
+				print(f"    {method}:", flush=True)
 				for key in ['correct', 'incorrect', 'total']:
-					probs_list = probs_dict[key]
+					probs_list = probs_dict.get(key, [])
 					if probs_list:
 						avg_prob = np.mean(probs_list)
 						std_prob = np.std(probs_list)
-						print(f"    {key}: {avg_prob:.6f} +- {std_prob:.6f} (n={len(probs_list)})", flush=True)
-			
-			final_probs_dict = average_final_answer_probs[gen][num_permuted]
-			print(f"  Final answer probabilities:", flush=True)
-			
+						print(f"      {key}: {avg_prob:.6f} +- {std_prob:.6f} (n={len(probs_list)})", flush=True)
+		
+		final_probs_by_method = average_final_answer_probs[gen].get(num_permuted, {})
+		print(f"  Final answer probabilities:", flush=True)
+		
+		for method, final_probs_dict in final_probs_by_method.items():
+			print(f"    {method}:", flush=True)
 			for key in ['correct', 'incorrect', 'total']:
-				final_probs_list = final_probs_dict[key]
+				final_probs_list = final_probs_dict.get(key, [])
 				if final_probs_list:
 					avg_final_prob = np.mean(final_probs_list)
 					std_final_prob = np.std(final_probs_list)
-					print(f"    {key}: {avg_final_prob:.6f} +- {std_final_prob:.6f} (n={len(final_probs_list)})", flush=True)
-
-			ratios_dict = average_ratios[gen][num_permuted]
-			print(f"  Correct/given probability ratios:", flush=True)
-			
+					print(f"      {key}: {avg_final_prob:.6f} +- {std_final_prob:.6f} (n={len(final_probs_list)})", flush=True)
+		
+		ratios_by_method = average_ratios[gen].get(num_permuted, {})
+		print(f"  Correct/given probability ratios:", flush=True)
+		
+		for method, ratios_dict in ratios_by_method.items():
+			print(f"    {method}:", flush=True)
 			for key in ['same length', 'stopped early', 'stopped late']:
-				ratio_list = ratios_dict[key]
+				ratio_list = ratios_dict.get(key, [])
 				if ratio_list:
 					avg_ratio = np.mean(ratio_list)
 					std_ratio = np.std(ratio_list)
-					print(f"    {key}: {avg_ratio:.6f} +- {std_ratio:.6f} (n={len(ratio_list)})", flush=True)
+					print(f"      {key}: {avg_ratio:.6f} +- {std_ratio:.6f} (n={len(ratio_list)})", flush=True)
 
 
 end = time.time()
