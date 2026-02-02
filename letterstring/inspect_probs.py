@@ -472,7 +472,8 @@ def compare_prompting_ratios(tokenizer, output_ap, output_bl, correct_answer=Non
 	
 	if gen_indices_ap is not None and gen_indices_bl is not None:
 		if len(gen_indices_ap) != len(gen_indices_bl):
-			print(f"Answer of bl and ap different length. No ratio computation.")
+			if verbose: 
+				print(f"Answer of bl and ap different length. No ratio computation.")
 			return None, None, None, None
 
 		# Focus on different tokens between ap and bl -> remove same tokens
@@ -503,7 +504,8 @@ def compare_prompting_ratios(tokenizer, output_ap, output_bl, correct_answer=Non
 			correct_answer_tokens_bl = correct_answer_tokens_bl.new_empty((0,), dtype=correct_answer_tokens_bl.dtype)
 
 		if len(gen_indices_ap) == 0:
-			print(f"All tokens have been removed. Skipping ratio calculation.")
+			if verbose: 
+				print(f"All tokens have been removed. Skipping ratio calculation.")
 			return None, None, None, None
 
 	# compute ratios 
@@ -624,7 +626,7 @@ for num_permuted in [1, 2, 5, 10, 20]:
 		alph_string = ' '.join(shuffled_alphabet)
 
 		# Evaluate
-		N_trials_per_prob_type = 1 # 10
+		N_trials_per_prob_type = 10
 		count = 0
 		for p in range(N_prob_types):
 			if prob_types[p] == 'attn':
