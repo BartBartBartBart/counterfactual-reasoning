@@ -491,22 +491,25 @@ def compare_prompting_ratios(tokenizer, output_ap, output_bl, correct_answer=Non
 					idx_to_remove.append(idx)
 
 		to_remove = set(idx_to_remove)
-		keep = [i for i in range(len(gen_indices_ap)) if i not in to_remove]
+		n = len(gen_indices_ap)
+		n_ap_tokens = int(correct_answer_tokens_ap.size(0))
+		n_bl_tokens = int(correct_answer_tokens_bl.size(0))
+
+		keep = [i for i in range(n) if i not in to_remove and i < n_ap_tokens and i < n_bl_tokens]
+
+		if len(keep) == 0:
+			if verbose:
+				print(f"All tokens have been removed. Skipping ratio calculation \n")
+			return None, None, None, None
 
 		gen_indices_ap = [gen_indices_ap[i] for i in keep]
 		gen_indices_bl = [gen_indices_bl[i] for i in keep]
 
-		if len(keep) > 0:
-			correct_answer_tokens_ap = correct_answer_tokens_ap[keep]
-			correct_answer_tokens_bl = correct_answer_tokens_bl[keep]
-		else:
-			correct_answer_tokens_ap = correct_answer_tokens_ap.new_empty((0,), dtype=correct_answer_tokens_ap.dtype)
-			correct_answer_tokens_bl = correct_answer_tokens_bl.new_empty((0,), dtype=correct_answer_tokens_bl.dtype)
+		idx_tensor_ap = torch.tensor(keep, dtype=torch.long, device=correct_answer_tokens_ap.device)
+		idx_tensor_bl = torch.tensor(keep, dtype=torch.long, device=correct_answer_tokens_bl.device)
 
-		if len(gen_indices_ap) == 0:
-			if verbose: 
-				print(f"All tokens have been removed. Skipping ratio calculation.")
-			return None, None, None, None
+		correct_answer_tokens_ap = correct_answer_tokens_ap[idx_tensor_ap]
+		correct_answer_tokens_bl = correct_answer_tokens_bl[idx_tensor_bl]
 
 	# compute ratios 
 	if final_answer_start_ap is not None:
