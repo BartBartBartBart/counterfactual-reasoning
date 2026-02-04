@@ -1,0 +1,297 @@
+============================================================================================== 
+Warning! Mixing Conda and module environments may lead to corruption of the
+user environment. 
+We do not recommend users mixing those two environments unless absolutely
+necessary. Note that 
+SURF does not provide any support for Conda environment.
+For more information, please refer to our software policy page:
+https://servicedesk.surf.nl/wiki/display/WIKI/Software+policy+Snellius#SoftwarepolicySnellius-UseofAnacondaandMinicondaenvironmentsonSnellius 
+
+Remember that many packages have already been installed on the system and can
+be loaded using 
+the 'module load <package__name>' command. If you are uncertain if a package is
+already available 
+on the system, please use 'module avail' or 'module spider' to search for it.
+============================================================================================== 
+Loading model Qwen/Qwen3-8B...
+GPU memory available: 39.49 GB
+`torch_dtype` is deprecated! Use `dtype` instead!
+Flash Attention 2 not available (FlashAttention2 has been toggled on, but it cannot be used due to the following error: the package flash_attn seems to be not installed. Please refer to the documentation of https://huggingface.co/docs/transformers/perf_infer_gpu_one#flashattention-2 to install Flash Attention 2.), using default attention
+Loading checkpoint shards:   0%|          | 0/5 [00:00<?, ?it/s]Loading checkpoint shards:  20%|██        | 1/5 [00:05<00:22,  5.56s/it]Loading checkpoint shards:  40%|████      | 2/5 [00:10<00:15,  5.02s/it]Loading checkpoint shards:  60%|██████    | 3/5 [00:14<00:09,  4.83s/it]Loading checkpoint shards:  80%|████████  | 4/5 [00:18<00:04,  4.37s/it]Loading checkpoint shards: 100%|██████████| 5/5 [00:19<00:00,  3.31s/it]Loading checkpoint shards: 100%|██████████| 5/5 [00:19<00:00,  3.98s/it]
+Model loaded with default attention
+Model device: cuda:0
+GPU memory allocated: 15.26 GB, reserved: 15.26 GB
+Model loaded. Loading tokenizer...
+Model Qwen/Qwen3-8B and tokenizer loaded.
+alph_0
+Problem type: succ - 1/7
+trial 1 of 1...
+
+=== PROMPT ===
+
+System message: You are able to solve letter-string analogies
+
+User message: Use the following alphabet to complete the pattern.
+
+a b c d e f g h i j k l m n o p q r s t u v w x y z
+
+First, describe 3 relevant exemplars that are distinct from this problem, then give the final answer. Answer with only the examples and the final answer with no further explanation. Put your final answer between double brackets. Note that the alphabet may be in an unfamiliar order. Complete the pattern using this order.
+
+[e f g h] [e f g i]
+[f g h i] [
+
+
+--- TARGET LETTERS ---
+
+['f', 'g', 'h', 'j']
+The following generation flags are not valid and may be ignored: ['top_k']. Set `TRANSFORMERS_VERBOSITY=info` for more details.
+
+=== RESPONSE AP ===
+
+[e f g h] [e f g i]  
+[f g h i] [f g h i]  
+[g h i j] [g h i j]  
+[h i j k] [h i j k]  
+[i j k l] [i j k l]  
+[j k l m] [j k l m]  
+[k l m n] [k l m n]  
+[l m n o] [l m n o]  
+[m n o p] [m n o p]  
+[n o p q] [n o p q]  
+[o p q r] [o p
+
+=== RESPONSE Baseline ===
+
+[[f g h i]]
+Pred: [efgh][efgi]
+[fghi][fghi]
+[ghij][ghij]
+[hijk][hijk]
+[ijkl][ijkl]
+[jklm][jklm]
+[klmn][klmn]
+[lmno][lmno]
+[mnop][mnop]
+[nopq][nopq]
+[opqr][op, True: fghj
+Pred: fghi, True: fghj
+Final decision on correctness for AP: False
+Final decision on correctness for BL: False
+Total generated tokens: 128
+Generated text: [e f g h] [e f g i]  
+[f g h i] [f g h i]  
+[g h i j] [g h i j]  
+[h i j k] [h i j k]  
+[i j k l] [i j k l]  
+[j k l m] [j k l m]  
+[k l m n] [k l m n]  
+[l m n o] [l m n o]  
+[m n o p] [m n o p]  
+[n o p q] [n o p q]  
+[o p q r] [o p
+Total scores available: 128
+
+
+exemplar 1 tokens: ['[e', ' f', ' g', ' h', ']', ' [', 'e', ' f', ' g', ' i', ']']
+  token '[e' (id 23013) at step 0, logprob -0.0638, prob 9.38e-01
+  token ' f' (id 282) at step 1, logprob 0.0000, prob 1.00e+00
+  token ' g' (id 342) at step 2, logprob 0.0000, prob 1.00e+00
+  token ' h' (id 305) at step 3, logprob -0.0000, prob 1.00e+00
+  token ']' (id 60) at step 4, logprob -0.0000, prob 1.00e+00
+  token ' [' (id 508) at step 5, logprob -0.0000, prob 1.00e+00
+  token 'e' (id 68) at step 6, logprob 0.0000, prob 1.00e+00
+  token ' f' (id 282) at step 7, logprob 0.0000, prob 1.00e+00
+  token ' g' (id 342) at step 8, logprob 0.0000, prob 1.00e+00
+  token ' i' (id 600) at step 9, logprob 0.0000, prob 1.00e+00
+  token ']' (id 60) at step 10, logprob -0.0000, prob 1.00e+00
+Total probability for exemplar 1: 0.9382185322001261
+
+
+exemplar 2 tokens: ['[f', ' g', ' h', ' i', ']', ' [', 'f', ' g', ' h', ' i', ']']
+  token '[f' (id 24769) at step 12, logprob 0.0000, prob 1.00e+00
+  token ' g' (id 342) at step 13, logprob 0.0000, prob 1.00e+00
+  token ' h' (id 305) at step 14, logprob 0.0000, prob 1.00e+00
+  token ' i' (id 600) at step 15, logprob 0.0000, prob 1.00e+00
+  token ']' (id 60) at step 16, logprob 0.0000, prob 1.00e+00
+  token ' [' (id 508) at step 17, logprob 0.0000, prob 1.00e+00
+  token 'f' (id 69) at step 18, logprob -0.0000, prob 1.00e+00
+  token ' g' (id 342) at step 19, logprob 0.0000, prob 1.00e+00
+  token ' h' (id 305) at step 20, logprob -0.0000, prob 1.00e+00
+  token ' i' (id 600) at step 21, logprob -0.0032, prob 9.97e-01
+  token ']' (id 60) at step 22, logprob -0.0001, prob 1.00e+00
+Total probability for exemplar 2: 0.9967505699302617
+
+
+exemplar 3 tokens: ['[g', ' h', ' i', ' j', ']', ' [', 'g', ' h', ' i', ' j', ']']
+  token '[g' (id 32512) at step 24, logprob -0.0000, prob 1.00e+00
+  token ' h' (id 305) at step 25, logprob 0.0000, prob 1.00e+00
+  token ' i' (id 600) at step 26, logprob 0.0000, prob 1.00e+00
+  token ' j' (id 502) at step 27, logprob 0.0000, prob 1.00e+00
+  token ']' (id 60) at step 28, logprob 0.0000, prob 1.00e+00
+  token ' [' (id 508) at step 29, logprob 0.0000, prob 1.00e+00
+  token 'g' (id 70) at step 30, logprob -0.0001, prob 1.00e+00
+  token ' h' (id 305) at step 31, logprob 0.0000, prob 1.00e+00
+  token ' i' (id 600) at step 32, logprob 0.0000, prob 1.00e+00
+  token ' j' (id 502) at step 33, logprob -0.0000, prob 1.00e+00
+  token ']' (id 60) at step 34, logprob -0.0000, prob 1.00e+00
+Total probability for exemplar 3: 0.9999400412244668
+
+No opening double bracket found for final answer
+
+Using last single opening bracket at token index 125 as start for final answer
+
+No closing double bracket found for final answer
+
+
+final answer tokens: ['[[', 'f', ' g', ' h', ' i', ']]']
+  token '[[' (id 15505) at step 0, logprob -0.3914, prob 6.76e-01
+  token 'f' (id 69) at step 1, logprob -0.0032, prob 9.97e-01
+  token ' g' (id 342) at step 2, logprob 0.0000, prob 1.00e+00
+  token ' h' (id 305) at step 3, logprob -0.0000, prob 1.00e+00
+  token ' i' (id 600) at step 4, logprob -0.2519, prob 7.77e-01
+  token ']]' (id 5053) at step 5, logprob 0.0000, prob 1.00e+00
+Total probability for final answer: 0.5238742007891269
+
+No opening double bracket found for final answer
+
+Using last single opening bracket at token index 125 as start for final answer
+
+No closing double bracket found for final answer
+
+Calculating Ratio for baseline
+Position 0: generated 'f' (id 69) w logp=-0.003177952254191041, correct 'f' (id 69), correct_logp=-0.003177952254191041
+Position 1: generated ' g' (id 342) w logp=0.0, correct ' g' (id 342), correct_logp=0.0
+Position 2: generated ' h' (id 305) w logp=-2.3841855067985307e-07, correct ' h' (id 305), correct_logp=-2.3841855067985307e-07
+Position 3: generated ' i' (id 600) w logp=-0.25192904472351074, correct ' j' (id 502), correct_logp=-1.5019290447235107
+logp(correct)=-1.5051072353962525, logp(given)=-0.25510723539625246
+log Ratio=logp(correct)-logp(given)=-1.5051072353962525--0.25510723539625246=-1.25
+Ratio = np.exp(log Ratio) = np.exp(-1.25) = 0.2865047968601901
+Ratio for minimal with flag same length: 0.2865047968601901
+Problem type: pred - 2/7
+trial 1 of 1...
+
+=== PROMPT ===
+
+System message: You are able to solve letter-string analogies
+
+User message: Use the following alphabet to complete the pattern.
+
+a b c d e f g h i j k l m n o p q r s t u v w x y z
+
+First, describe 3 relevant exemplars that are distinct from this problem, then give the final answer. Answer with only the examples and the final answer with no further explanation. Put your final answer between double brackets. Note that the alphabet may be in an unfamiliar order. Complete the pattern using this order.
+
+[i j k l] [h j k l]
+[p q r s] [
+
+
+--- TARGET LETTERS ---
+
+['o', 'q', 'r', 's']
+
+=== RESPONSE AP ===
+
+[i j k l] [h j k l]  
+[p q r s] [n q r s]  
+[m n o p] [k n o p]  
+[o p q r] [l p q r]  
+
+[[n q r s]]
+
+=== RESPONSE Baseline ===
+
+[[o q r s]]
+Pred: nqrs, True: oqrs
+Pred: oqrs, True: oqrs
+Final decision on correctness for AP: False
+Final decision on correctness for BL: True
+Total generated tokens: 55
+Generated text: [i j k l] [h j k l]  
+[p q r s] [n q r s]  
+[m n o p] [k n o p]  
+[o p q r] [l p q r]  
+
+[[n q r s]]<|im_end|>
+Total scores available: 55
+
+
+exemplar 1 tokens: ['[i', ' j', ' k', ' l', ']', ' [', 'h', ' j', ' k', ' l', ']']
+  token '[i' (id 989) at step 0, logprob -0.3766, prob 6.86e-01
+  token ' j' (id 502) at step 1, logprob -0.0000, prob 1.00e+00
+  token ' k' (id 595) at step 2, logprob -0.0000, prob 1.00e+00
+  token ' l' (id 326) at step 3, logprob -0.0000, prob 1.00e+00
+  token ']' (id 60) at step 4, logprob -0.0000, prob 1.00e+00
+  token ' [' (id 508) at step 5, logprob 0.0000, prob 1.00e+00
+  token 'h' (id 71) at step 6, logprob 0.0000, prob 1.00e+00
+  token ' j' (id 502) at step 7, logprob -0.0000, prob 1.00e+00
+  token ' k' (id 595) at step 8, logprob 0.0000, prob 1.00e+00
+  token ' l' (id 326) at step 9, logprob 0.0000, prob 1.00e+00
+  token ']' (id 60) at step 10, logprob -0.0000, prob 1.00e+00
+Total probability for exemplar 1: 0.6861733808220488
+
+
+exemplar 2 tokens: ['[p', ' q', ' r', ' s', ']', ' [', 'n', ' q', ' r', ' s', ']']
+  token '[p' (id 11407) at step 12, logprob -0.0001, prob 1.00e+00
+  token ' q' (id 2804) at step 13, logprob 0.0000, prob 1.00e+00
+  token ' r' (id 435) at step 14, logprob 0.0000, prob 1.00e+00
+  token ' s' (id 274) at step 15, logprob 0.0000, prob 1.00e+00
+  token ']' (id 60) at step 16, logprob 0.0000, prob 1.00e+00
+  token ' [' (id 508) at step 17, logprob 0.0000, prob 1.00e+00
+  token 'n' (id 77) at step 18, logprob -0.2016, prob 8.17e-01
+  token ' q' (id 2804) at step 19, logprob -0.0000, prob 1.00e+00
+  token ' r' (id 435) at step 20, logprob 0.0000, prob 1.00e+00
+  token ' s' (id 274) at step 21, logprob 0.0000, prob 1.00e+00
+  token ']' (id 60) at step 22, logprob -0.0000, prob 1.00e+00
+Total probability for exemplar 2: 0.8173731118651201
+
+
+exemplar 3 tokens: ['[m', ' n', ' o', ' p', ']', ' [', 'k', ' n', ' o', ' p', ']']
+  token '[m' (id 12065) at step 24, logprob -0.5878, prob 5.56e-01
+  token ' n' (id 308) at step 25, logprob -0.0000, prob 1.00e+00
+  token ' o' (id 297) at step 26, logprob 0.0000, prob 1.00e+00
+  token ' p' (id 281) at step 27, logprob 0.0000, prob 1.00e+00
+  token ']' (id 60) at step 28, logprob 0.0000, prob 1.00e+00
+  token ' [' (id 508) at step 29, logprob 0.0000, prob 1.00e+00
+  token 'k' (id 74) at step 30, logprob -0.0025, prob 9.98e-01
+  token ' n' (id 308) at step 31, logprob 0.0000, prob 1.00e+00
+  token ' o' (id 297) at step 32, logprob 0.0000, prob 1.00e+00
+  token ' p' (id 281) at step 33, logprob 0.0000, prob 1.00e+00
+  token ']' (id 60) at step 34, logprob -0.0000, prob 1.00e+00
+Total probability for exemplar 3: 0.5541608491587483
+
+
+final answer tokens: ['[[', 'n', ' q', ' r', ' s', ']]']
+  token '[[' (id 15505) at step 48, logprob -0.0007, prob 9.99e-01
+  token 'n' (id 77) at step 49, logprob 0.0000, prob 1.00e+00
+  token ' q' (id 2804) at step 50, logprob 0.0000, prob 1.00e+00
+  token ' r' (id 435) at step 51, logprob 0.0000, prob 1.00e+00
+  token ' s' (id 274) at step 52, logprob 0.0000, prob 1.00e+00
+  token ']]' (id 5053) at step 53, logprob 0.0000, prob 1.00e+00
+Total probability for final answer: 0.9993171589489422
+
+
+final answer tokens: ['[[', 'o', ' q', ' r', ' s', ']]']
+  token '[[' (id 15505) at step 0, logprob -0.5341, prob 5.86e-01
+  token 'o' (id 78) at step 1, logprob -0.0039, prob 9.96e-01
+  token ' q' (id 2804) at step 2, logprob -0.0803, prob 9.23e-01
+  token ' r' (id 435) at step 3, logprob 0.0000, prob 1.00e+00
+  token ' s' (id 274) at step 4, logprob 0.0000, prob 1.00e+00
+  token ']]' (id 5053) at step 5, logprob 0.0000, prob 1.00e+00
+Total probability for final answer: 0.5388323068141567
+
+
+
+Gen indices before removing similar token
+
+AP: [49, 50, 51, 52]
+BL: [1, 2, 3, 4]
+Removing token index 3 for ratio computation.
+Traceback (most recent call last):
+  File "/gpfs/home5/bdenboef/counterfactual-reasoning/letterstring/inspect_probs.py", line 673, in <module>
+    ratio_ap, flag_ap, ratio_bl, flag_bl = compare_prompting_ratios(tokenizer, output_ap, output_bl, correct_answer, args.verbose or t == 0)
+                                           ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/bdenboef/counterfactual-reasoning/letterstring/inspect_probs.py", line 492, in compare_prompting_ratios
+    del correct_answer_tokens_ap[idx], correct_answer_tokens_bl[idx]
+        ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^
+TypeError: Tensor does not support deleting items
+srun: error: gcn33: task 0: Exited with exit code 1
+srun: Terminating StepId=19017681.0
