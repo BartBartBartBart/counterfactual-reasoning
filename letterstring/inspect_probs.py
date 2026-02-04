@@ -667,13 +667,18 @@ for num_permuted in [1, 2, 5, 10, 20]:
 					correct_bl, correct_answer = determine_correctness(pred_bl, current_target)
 
 					if args.verbose or t == 0:
-						print(f"\nFinal decision on correctness for AP: {correct_ap}", flush=True)
+						print(f"\n=== CORRECTNESS ===\n")
+						print(f"Final decision on correctness for AP: {correct_ap}", flush=True)
 						print(f"Final decision on correctness for BL: {correct_bl}", flush=True)
 
+					if args.verbose or t == 0:
+						print(f"\n=== SEQUENCE PROBABILITIES ===\n")
 					probs_per_exemplar, total_exemplar_probs = extract_exemplar_probs(tokenizer, output_ap, args.verbose or t == 0)
 					final_answer_prob_ap = extract_final_answer_prob(tokenizer, output_ap, args.verbose or t == 0)
 					final_answer_prob_bl = extract_final_answer_prob(tokenizer, output_bl, args.verbose or t == 0)
 
+					if args.verbose or t == 0:
+						print(f"\n=== RATIO CALCULATION ===\n")
 					ratio_ap, flag_ap, ratio_bl, flag_bl = None, None, None, None
 					if pred_ap != pred_bl:
 						ratio_ap, flag_ap, ratio_bl, flag_bl = compare_prompting_ratios(tokenizer, output_ap, output_bl, correct_answer, args.verbose or t == 0)
