@@ -150,7 +150,7 @@ def get_probs(messages, model, tokenizer):
 	full_text = tokenizer.decode(generated_ids, skip_special_tokens=True)
 	return generated_ids, scores, full_text
 
-def determine_correctness(pred, current_target):
+def determine_correctness(pred, current_target, verbose):
 	"""Filter output for answer and compare with ground truth"""
 	# Filter the answer, take only the content inside double brackets [[ answer ]]
 	if '[[' in pred and ']]' in pred:
@@ -160,13 +160,11 @@ def determine_correctness(pred, current_target):
 		pred = pred.strip(" '").replace(" ", "").lower()
 	else:
 		pred = pred.replace(" ", "").lower()
-	# true = full_tgt_letters
 	true = current_target
 	if type(true[0]) == np.int64:
 		true = [str(x) for x in true]
 	true = ''.join(true).lower()
-	if args.verbose:
-		print(f'Pred: {pred}, True: {true}')
+
 	if pred == true:
 		correct = True
 	elif true in pred:
@@ -236,10 +234,10 @@ def calculate_token_probability(tokenizer, scores, generated_ids, token_indices,
 		
 		if step >= 0 and step < len(scores):
 			token_logprob = torch.log_softmax(scores[step][0], dim=-1)[tok_id].item()
-			token_decoded = tokenizer.decode([tok_id])
-			token_prob = np.exp(token_logprob)
-			if verbose:
-				print(f"  token '{token_decoded}' (id {tok_id}) at step {step}, logprob {token_logprob:.4f}, prob {token_prob:.2e}")
+			# token_decoded = tokenizer.decode([tok_id])
+			# token_prob = np.exp(token_logprob)
+			# if verbose:
+				# print(f"  token '{token_decoded}' (id {tok_id}) at step {step}, logprob {token_logprob:.4f}, prob {token_prob:.2e}")
 			logprob += token_logprob
 		else:
 			print(f"  WARNING: step {step} out of range for scores (len={len(scores)})")
@@ -262,11 +260,6 @@ def extract_exemplar_probs(tokenizer, output_ap, verbose=False):
 
 	generated_ids = output_ap["generated_ids"]
 	scores = output_ap["scores"]
-
-	if verbose:
-		print(f"Total generated tokens: {len(generated_ids)}")
-		print(f"Generated text: {tokenizer.decode(generated_ids)}")
-		print(f"Total scores available: {len(scores)}\n")
 
 	# Loop through actual generated tokens
 	for token_idx, token_id in enumerate(generated_ids):
@@ -317,11 +310,15 @@ def extract_final_answer_prob(tokenizer, output, verbose=False):
 	scores = output["scores"]
 	
 	# Filter for final answer
-	final_answer_start, final_answer_end = find_final_answer(generated_ids, verbose)
+	final_answer_start, final_answer_end = find_final_answer(generated_ids)
 
 	# No final answer found
 	if final_answer_start is None or final_answer_end is None: 
+		if verbose:
+			print(f"\nNo final answer found.")
 		return final_answer_prob
+	elif verbose:
+		print(f"\nFound final answer between index {final_answer_start} and {final_answer_end}.")
 
 	# Extract token indices between brackets
 	final_answer_token_indices = list(range(final_answer_start, final_answer_end + 1))
@@ -422,9 +419,9 @@ def get_ratio(tokenizer, scores, generated_ids, gen_indices, correct_answer_toke
 	ratio = np.exp(correct_log_sum - gen_log_sum)
 
 	if verbose: 
-		print(f"logp(correct)={correct_log_sum}, logp(given)={gen_log_sum}")
+		print(f"\nlogp(correct)={correct_log_sum}, logp(given)={gen_log_sum}")
 		print(f"log Ratio=logp(correct)-logp(given)={correct_log_sum}-{gen_log_sum}={correct_log_sum-gen_log_sum}")
-		print(f"Ratio = np.exp(log Ratio) = np.exp({correct_log_sum-gen_log_sum}) = {ratio}")
+		print(f"Ratio = np.exp(log Ratio) = np.exp({correct_log_sum-gen_log_sum}) = {ratio}\n")
 	
 	return ratio
 
@@ -438,8 +435,8 @@ def compare_prompting_ratios(tokenizer, output_ap, output_bl, correct_answer=Non
 	:param correct_answer: Description
 	:param verbose: Description
 	"""
-	final_answer_start_ap, final_answer_end_ap = find_final_answer(output_ap["generated_ids"], verbose)
-	final_answer_start_bl, final_answer_end_bl = find_final_answer(output_bl["generated_ids"], verbose)
+	final_answer_start_ap, final_answer_end_ap = find_final_answer(output_ap["generated_ids"])
+	final_answer_start_bl, final_answer_end_bl = find_final_answer(output_bl["generated_ids"])
 	gen_indices_ap, gen_indices_bl = None, None
 	ratio_ap, ratio_bl = None, None
 	flag_ap, flag_bl = None, None
@@ -473,7 +470,7 @@ def compare_prompting_ratios(tokenizer, output_ap, output_bl, correct_answer=Non
 	if gen_indices_ap is not None and gen_indices_bl is not None:
 		if len(gen_indices_ap) != len(gen_indices_bl):
 			if verbose: 
-				print(f"Answer of bl and ap different length. No ratio computation.")
+				print(f"Answer of bl and ap different length. No ratio computation.\n")
 			return None, None, None, None
 
 		# Focus on different tokens between ap and bl -> remove same tokens
@@ -482,7 +479,7 @@ def compare_prompting_ratios(tokenizer, output_ap, output_bl, correct_answer=Non
 			if output_ap["generated_ids"][tok_ap] == output_bl["generated_ids"][tok_bl]: 
 				idx_to_remove.append(idx)
 				if verbose:
-					print(f"\nRemoving token {output_ap["generated_ids"][tok_ap]}")
+					print(f"Removing token {output_ap["generated_ids"][tok_ap]}")
 
 			else:
 				ap_token = tokenizer.decode([output_ap["generated_ids"][tok_ap].item()])
@@ -499,7 +496,7 @@ def compare_prompting_ratios(tokenizer, output_ap, output_bl, correct_answer=Non
 
 		if len(keep) == 0:
 			if verbose:
-				print(f"All tokens have been removed. Skipping ratio calculation \n")
+				print(f"\nAll tokens have been removed. Skipping ratio calculation \n")
 			return None, None, None, None
 
 		gen_indices_ap = [gen_indices_ap[i] for i in keep]
@@ -594,7 +591,6 @@ else:
 average_exemplar_probs = {gen: {} for gen in gen_types}
 average_final_answer_probs = {gen: {} for gen in gen_types}
 average_ratios = {gen: {} for gen in gen_types}
-# response_dict_all = {} # Stores responses for all problems, together with their scores and generation_ids in npz format
 
 # Collect average exemplar probability for each number of permuted letters
 for num_permuted in [1, 2, 5, 10, 20]:
@@ -620,10 +616,6 @@ for num_permuted in [1, 2, 5, 10, 20]:
 			
 		shuffled_alphabet = builtins.list(all_prob.item()[alph]['shuffled_alphabet'])
 
-		# response_dict[alph] = {'shuffled_letters': shuffled_letters,
-		# 					   'shuffled_alphabet': shuffled_alphabet,
-		# 					   'problems': {}}
-
 		prob_types = builtins.list(all_prob.item()[alph].keys())[2:] # first two items are list of shuffled letters and shuflled alphabet: skip this
 		N_prob_types = len(prob_types) # -1 # minus 1 to skip attention problems
 		alph_string = ' '.join(shuffled_alphabet)
@@ -645,16 +637,14 @@ for num_permuted in [1, 2, 5, 10, 20]:
 				current_target = all_prob.item()[alph][prob_types[p]]['prob'][t][1][1]
 
 				# Create prompt
-				# messages = create_prompt(args.promptstyle, prob, alph_string)
 				messages_ap = create_prompt("analogical", prob, alph_string) # Analogical Prompting
 				messages_bl = create_prompt("minimal", prob, alph_string) # Baseline
 
 				# If verbose or first trial
 				if args.verbose or t == 0:
 					print("\n=== PROMPT ===\n", flush=True)
-					print(f"System message: {messages_ap[0]['content']}\n", flush=True)
-					print(f"User message: {messages_ap[1]['content']}\n", flush=True)
-					print("\n--- TARGET LETTERS ---\n", flush=True)
+					print(f"{messages_ap[1]['content']}\n", flush=True)
+					print("\n=== TARGET LETTERS ===\n", flush=True)
 					print(current_target, flush=True)
 
 				# Get response
@@ -676,8 +666,8 @@ for num_permuted in [1, 2, 5, 10, 20]:
 					correct_ap, correct_answer = determine_correctness(pred_ap, current_target)
 					correct_bl, correct_answer = determine_correctness(pred_bl, current_target)
 
-					if args.verbose:
-						print(f"Final decision on correctness for AP: {correct_ap}", flush=True)
+					if args.verbose or t == 0:
+						print(f"\nFinal decision on correctness for AP: {correct_ap}", flush=True)
 						print(f"Final decision on correctness for BL: {correct_bl}", flush=True)
 
 					probs_per_exemplar, total_exemplar_probs = extract_exemplar_probs(tokenizer, output_ap, args.verbose or t == 0)
@@ -698,21 +688,6 @@ for num_permuted in [1, 2, 5, 10, 20]:
 						gen_key = "3gen"
 					else:
 						gen_key = "1gen"
-
-					# response_dict[alph]['problems'][(prob_types[p], t)] = {
-					# 	'prompt': messages,
-					# 	'generated_ids': generated_ids.cpu().numpy(),
-					# 	'scores': [s.cpu().numpy() for s in scores],
-					# 	'full_text': full_text,
-					# 	'predicted_answer': pred,
-					# 	'correct': correct,
-					# 	'final_answer_prob': final_answer_prob
-					# }
-
-					# if args.promptstyle == "analogical":
-						# # Store exemplar probabilities
-						# response_dict[alph]['problems'][(prob_types[p], t)]['exemplar_probs'] = probs_per_exemplar
-						# response_dict[alph]['problems'][(prob_types[p], t)]['total_exemplar_probs'] = total_exemplar_probs
 
 					for method in ["analogical", "minimal"]:
 						if method == "analogical":
@@ -755,14 +730,6 @@ for num_permuted in [1, 2, 5, 10, 20]:
 
 				elif args.use_saved:
 					print("Not implemented.")
-
-	# Store all responses for this num_permuted
-	# response_dict_all[num_permuted] = response_dict
-	
-	# Save incrementally after each num_permuted iteration
-	# temp_output_filename = f'./prob_results/probs_{args.promptstyle}_{problem_dir}_{args.model.replace("/", "_")}_responses.npz'
-	# np.savez_compressed(temp_output_filename, response_dict_all=response_dict_all)
-	# print(f"Checkpoint saved after {num_permuted} permuted letters: {temp_output_filename}", flush=True)
 
 	# Store results for this num_permuted
 	for gen in gen_types:
@@ -822,8 +789,3 @@ for gen in gen_types:
 
 end = time.time()
 print(f"\nTotal time: {end-start} seconds.", flush=True)
-
-# Save all responses to npz file
-# output_filename = f'./prob_results/probs_{args.promptstyle}_{problem_dir}_{args.model.replace("/", "_")}_responses.npz'
-# np.savez_compressed(output_filename, response_dict_all=response_dict_all)
-# print(f"All responses saved to {output_filename}", flush=True)
