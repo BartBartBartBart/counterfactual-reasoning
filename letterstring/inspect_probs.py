@@ -150,7 +150,7 @@ def get_probs(messages, model, tokenizer):
 	full_text = tokenizer.decode(generated_ids, skip_special_tokens=True)
 	return generated_ids, scores, full_text
 
-def determine_correctness(pred, current_target, verbose):
+def determine_correctness(pred, current_target):
 	"""Filter output for answer and compare with ground truth"""
 	# Filter the answer, take only the content inside double brackets [[ answer ]]
 	if '[[' in pred and ']]' in pred:
@@ -788,13 +788,4 @@ for gen in gen_types:
 
 
 end = time.time()
-<<<<<<< HEAD
 print(f"\nTotal time: {end-start} seconds.", flush=True)
-
-# Save all responses to npz file
-# output_filename = f'./prob_results/probs_{args.promptstyle}_{problem_dir}_{args.model.replace("/", "_")}_responses.npz'
-# np.savez_compressed(output_filename, response_dict_all=response_dict_all)
-# print(f"All responses saved to {output_filename}", flush=True)
-=======
-print(f"\nTotal time: {end-start} seconds.", flush=True)
->>>>>>> a88fb76e8062fc1fbdbcf59a8c9b3d4d59faae81

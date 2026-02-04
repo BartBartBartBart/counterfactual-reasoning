@@ -1,0 +1,63 @@
+============================================================================================== 
+Warning! Mixing Conda and module environments may lead to corruption of the
+user environment. 
+We do not recommend users mixing those two environments unless absolutely
+necessary. Note that 
+SURF does not provide any support for Conda environment.
+For more information, please refer to our software policy page:
+https://servicedesk.surf.nl/wiki/display/WIKI/Software+policy+Snellius#SoftwarepolicySnellius-UseofAnacondaandMinicondaenvironmentsonSnellius 
+
+Remember that many packages have already been installed on the system and can
+be loaded using 
+the 'module load <package__name>' command. If you are uncertain if a package is
+already available 
+on the system, please use 'module avail' or 'module spider' to search for it.
+============================================================================================== 
+Loading model Qwen/Qwen3-8B...
+GPU memory available: 39.49 GB
+`torch_dtype` is deprecated! Use `dtype` instead!
+Flash Attention 2 not available (FlashAttention2 has been toggled on, but it cannot be used due to the following error: the package flash_attn seems to be not installed. Please refer to the documentation of https://huggingface.co/docs/transformers/perf_infer_gpu_one#flashattention-2 to install Flash Attention 2.), using default attention
+Loading checkpoint shards:   0%|          | 0/5 [00:00<?, ?it/s]Loading checkpoint shards:  20%|██        | 1/5 [00:04<00:18,  4.64s/it]Loading checkpoint shards:  40%|████      | 2/5 [00:09<00:13,  4.65s/it]Loading checkpoint shards:  60%|██████    | 3/5 [00:13<00:09,  4.62s/it]Loading checkpoint shards:  80%|████████  | 4/5 [00:17<00:04,  4.26s/it]Loading checkpoint shards: 100%|██████████| 5/5 [00:19<00:00,  3.25s/it]Loading checkpoint shards: 100%|██████████| 5/5 [00:19<00:00,  3.81s/it]
+Model loaded with default attention
+Model device: cuda:0
+GPU memory allocated: 15.26 GB, reserved: 15.26 GB
+Model loaded. Loading tokenizer...
+Model Qwen/Qwen3-8B and tokenizer loaded.
+alph_0
+Problem type: larger_int - 1/20
+trial 1 of 10...
+
+=== PROMPT ===
+
+Use the following alphabet to complete the pattern.
+
+a b c d e f g h i j k l m n o p q r s t u v w x y z
+
+First, describe 3 relevant exemplars that are distinct from this problem, then give the final answer. Answer with only the examples and the final answer with no further explanation. Put your final answer between double brackets. Note that the alphabet may be in an unfamiliar order. Complete the pattern using this order.
+
+[f g h i] [e g h i]
+[k m o q] [
+
+
+=== TARGET LETTERS ===
+
+['i', 'm', 'o', 'q']
+The following generation flags are not valid and may be ignored: ['top_k']. Set `TRANSFORMERS_VERBOSITY=info` for more details.
+
+=== RESPONSE AP ===
+
+Example 1: [a b c d] [b c d e]  
+Example 2: [m n o p] [n o p q]  
+Example 3: [r s t u] [s t u v]  
+[[k m o q] [l o q s]]
+
+=== RESPONSE Baseline ===
+
+[[k m o q]]
+Traceback (most recent call last):
+  File "/gpfs/home5/bdenboef/counterfactual-reasoning/letterstring/inspect_probs.py", line 666, in <module>
+    correct_ap, correct_answer = determine_correctness(pred_ap, current_target)
+                                 ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: determine_correctness() missing 1 required positional argument: 'verbose'
+srun: error: gcn20: task 0: Exited with exit code 1
+srun: Terminating StepId=19183013.0
