@@ -150,7 +150,7 @@ def get_probs(messages, model, tokenizer):
 	full_text = tokenizer.decode(generated_ids, skip_special_tokens=True)
 	return generated_ids, scores, full_text
 
-def determine_correctness(pred, current_target, verbose):
+def determine_correctness(pred, current_target):
 	"""Filter output for answer and compare with ground truth"""
 	# Filter the answer, take only the content inside double brackets [[ answer ]]
 	if '[[' in pred and ']]' in pred:
