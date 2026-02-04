@@ -641,7 +641,7 @@ for num_permuted in [1, 2, 5, 10, 20]:
 				messages_bl = create_prompt("minimal", prob, alph_string) # Baseline
 
 				# If verbose or first trial
-				if args.verbose or t == 0:
+				if args.verbose:
 					print("\n=== PROMPT ===\n", flush=True)
 					print(f"{messages_ap[1]['content']}\n", flush=True)
 					print("\n=== TARGET LETTERS ===\n", flush=True)
@@ -656,7 +656,7 @@ for num_permuted in [1, 2, 5, 10, 20]:
 					pred_ap = clean_text(full_text_ap)
 					pred_bl = clean_text(full_text_bl)
 
-					if args.verbose or t == 0:
+					if args.verbose:
 						print("\n=== RESPONSE AP ===\n", flush=True)
 						print(pred_ap, flush=True)
 						print("\n=== RESPONSE Baseline ===\n", flush=True)
@@ -666,22 +666,22 @@ for num_permuted in [1, 2, 5, 10, 20]:
 					correct_ap, correct_answer = determine_correctness(pred_ap, current_target)
 					correct_bl, correct_answer = determine_correctness(pred_bl, current_target)
 
-					if args.verbose or t == 0:
+					if args.verbose:
 						print(f"\n=== CORRECTNESS ===\n")
 						print(f"Final decision on correctness for AP: {correct_ap}", flush=True)
 						print(f"Final decision on correctness for BL: {correct_bl}", flush=True)
 
-					if args.verbose or t == 0:
+					if args.verbose:
 						print(f"\n=== SEQUENCE PROBABILITIES ===\n")
-					probs_per_exemplar, total_exemplar_probs = extract_exemplar_probs(tokenizer, output_ap, args.verbose or t == 0)
-					final_answer_prob_ap = extract_final_answer_prob(tokenizer, output_ap, args.verbose or t == 0)
-					final_answer_prob_bl = extract_final_answer_prob(tokenizer, output_bl, args.verbose or t == 0)
+					probs_per_exemplar, total_exemplar_probs = extract_exemplar_probs(tokenizer, output_ap, args.verbose)
+					final_answer_prob_ap = extract_final_answer_prob(tokenizer, output_ap, args.verbose)
+					final_answer_prob_bl = extract_final_answer_prob(tokenizer, output_bl, args.verbose)
 
-					if args.verbose or t == 0:
+					if args.verbose:
 						print(f"\n=== RATIO CALCULATION ===\n")
 					ratio_ap, flag_ap, ratio_bl, flag_bl = None, None, None, None
 					if pred_ap != pred_bl:
-						ratio_ap, flag_ap, ratio_bl, flag_bl = compare_prompting_ratios(tokenizer, output_ap, output_bl, correct_answer, args.verbose or t == 0)
+						ratio_ap, flag_ap, ratio_bl, flag_bl = compare_prompting_ratios(tokenizer, output_ap, output_bl, correct_answer, args.verbose)
 					elif args.verbose: 
 						print(f"Skipping ratio calculation because answers are the same.")	
 
