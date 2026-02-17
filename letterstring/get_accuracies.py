@@ -1,6 +1,5 @@
 import numpy as np
 import argparse
-import pandas as pd
 import sys
 
 parser = argparse.ArgumentParser()
@@ -19,20 +18,17 @@ if args.gen_avg and (args.model == None or args.promptstyle == None):
     print("When using --gen_avg, please also provide --model and --promptstyle")
     sys.exit(1)
 
-# def compute_accuracy(trues, predictions):
-#     correct = 0
-
-#     for t, p in zip(trues, predictions):
-#         p=p.strip(" '")
-#         if (t==p):
-#             correct+=1
-#     return correct/len(trues)
-
 def check_partly_correct(true, pred):
     """
     Manual check for partly correct predictions (pred != true, but true in pred.)
     e.g. true = 'abcd', pred = 'abc][abcd' --> correct
-    Returns True if partly correct, False otherwise. 
+
+	:param true: the correct answer
+	:type true: str
+	:param pred: the model's prediction
+	:type pred: str
+	:return: whether the prediction is partly correct
+	:rtype: bool
     """
     # if multiple indices, take last one
     indices = [i for i in range(len(pred)) if pred.startswith(true, i)]
@@ -41,14 +37,14 @@ def check_partly_correct(true, pred):
         before = pred[index-1] if index > 0 else ' '
         after = pred[index+len(true)] if index + len(true) < len(pred) else ' '
         if before in ['['] and after in [' ', ']']:
-            # print(f"partly correct: True: {true}, Pred: {pred}")
             return True
-        # print(f"Not partly correct due to surrounding chars: True: {true}, Pred: {pred}, before {before}, after {after}")
     return False
 
+# Calculate accuracies for each problem type
 if not args.gen_avg and not args.symb_avg:
     acc_dict = {}
 
+    # Load responses
     response_folder = f"{args.model}_prob_predictions_multi_alph/{args.gen}"
 
     if args.gen == "gen" and args.num_permuted == "symb":
@@ -58,10 +54,10 @@ if not args.gen_avg and not args.symb_avg:
     print(f"Loading responses from {response_folder}/{response_file}...")
     responses = np.load(f"{response_folder}/{response_file}", allow_pickle=True)["data"].item()
 
+    # Used to track a missing split, should no longer be necessary
     if args.extra_split:
-        # Also load the extra split and merge
+        # Load extra split responses for 3gensplit7
         extra_response_file = f"{args.model}_letterstring_results_{args.num_permuted}_multi_alph_gptprobs_{args.promptstyle}_extrasplit.npz"
-        # This file contains only 3gensplit7, add it to the main responses
         print(f"Loading extra split responses from {response_folder}/{extra_response_file}...")
         extra_responses = np.load(f"{response_folder}/{extra_response_file}", allow_pickle=True)["data"].item()
         for alph in extra_responses:
@@ -149,25 +145,14 @@ if not args.gen_avg and not args.symb_avg:
         average_acc = sum(accs) / len(accs)
         print(f"Problem Type: {prob_type}, Average Accuracy: {average_acc}")
 
-    # Save accuracies to a CSV file
-    # df_rows = []
-    # for alph, alph_acc in acc_dict.items():
-    #     for prob_type, acc in alph_acc.items():
-    #         df_rows.append({'Alphabet': alph, 'Problem_Type': prob_type, 'Accuracy': acc})
-    # df = pd.DataFrame(df_rows)
-    # output_csv = f"results/{args.model}_letterstring_accuracies_{args.num_permuted}_{args.prompt}.csv"
-    # df.to_csv(output_csv, index=False)
-
     print(f"\n=== Partly Correct Predictions ===")
     if args.verbose:
         for t, p, d in zip(partly_correct.get('true', []), partly_correct.get('pred', []), partly_correct.get('decision', [])):
             print(f"True: {t}, Predicted: {p}, Decision: {d}")
     print(f"\nPartly correct counts: {partly_correct.get('count', 0)}")
 
+# calculate average across gen (0-gen, 1-gen, 2-gen, 3-gen)
 elif args.gen_avg:
-    # calculate average across gen (0-gen, 1-gen, 2-gen, 3-gen)
-    # table looks like:
-    # model | promptstyle | num_permuted | 0gen | 1gen | 2gen | 3gen
     gen_accs = {'0gen': [], '1gen': [], '2gen': [], '3gen': []}
 
     zero_gen_prob_names = ['succ', 'pred', 'add_letter', 'remove_redundant', 'fix_alphabet', 'sort', 'attn']
@@ -231,10 +216,8 @@ elif args.gen_avg:
             avg_acc = gen_accs[gen_key][[1,2,5,10,20].index(num_permuted)]
             print(f"Generation: {gen_key}, Average Accuracy: {avg_acc}")
 
+# Calculate average for symbolic alphabets, 0-gen has only succ and pred
 elif args.symb_avg:
-
-    # the symbolic alphabet only has 2 problem types: succ and pred
-    # only for 0 and 1 gen
     acc_dict = {}
     for gen in ['gen', 'nogen']:
         response_folder = f"{args.model}_prob_predictions_multi_alph/{gen}"
@@ -283,7 +266,6 @@ elif args.symb_avg:
                 else:
                     print(f"No predictions for problem type {prob_type}")
 
-            # accuracies[alph] = alph_accuracies
             # Compute average accuracy for this alphabet
             if len(alph_accuracies) > 0:
                 avg_acc = sum(alph_accuracies.values()) / len(alph_accuracies)

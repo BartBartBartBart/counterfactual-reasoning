@@ -209,11 +209,7 @@ for prob_ind in range(N_prob):
 			# analogical
 			elif args.user_prompt_num == 4 and args.prob_format == 'symb':
 				prompt = "Try to complete the pattern below. " # using the following alphabet.\n\n"
-				# prompt += f"Alphabet: {' '.join(alph)}\n\n"
 				prompt += "First describe 3 relevant exemplars that are distinct from this problem, then give the final answer for the problem. Answer with only the exemplars and final answer with no further explanation. Put your final answer between double brackets.\n\n"
-				# prompt += '\n\nFirst, describe 3 relevant exemplars that are distinct from this problem. 
-				# Then give the final answer. Answer with only the examples and the final answer 
-				# with no further explanation. Put your final answer between double brackets.\n'
 			elif args.user_prompt_num == 4 and args.prob_format != 'symb':
 				prompt = "Try to complete the pattern below. " # using digits from 0 to 9.\n\n"
 				prompt += "First describe 3 relevant exemplars that are distinct from this problem, then give the final answer for the problem. Answer with ONLY the exemplars and final answer with no further explanation. Put your final answer between double brackets.\n\n"
@@ -258,7 +254,6 @@ for prob_ind in range(N_prob):
 							prompt += '\n'
 			if args.verbose or prob_ind == 0:
 				print(prompt, flush=True)
-			# sys.exit()
 			# Get response
 			messages = [{"role": "system", "content": sys_content},
 						{"role": "user", "content": prompt}]
@@ -321,10 +316,6 @@ for prob_ind in range(N_prob):
 				print(f'Nonecount is {none_count}')
 
 			# Find portion of response corresponding to prediction
-
-			# Sometimes it will predict the whole row instead of only the corresponding coordinate
-			# If structure is 'a] [b] [c' take the corresponding coordinate
-			# If structure is just 'a' take that
 			if response_text.count(']') > 1:
 				opening_brackets = []
 				closing_brackets = []

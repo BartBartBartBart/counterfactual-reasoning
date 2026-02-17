@@ -13,6 +13,21 @@ To evaluate GPT 4 (0613) on symbol problems with system prompt 1 and user prompt
 
 `python eval_GPT_digitmat.py --gpt 0613 --sys_prompt_num 1 --user_prompt_num 2 --prob_format symb`
 
+## Testing Qwen3 
+The code has been adapted to support Qwen3 models. To use, set the `--id` flag to the Qwen3 model name. Additionally, the analogical prompting method has been added. To use, set the `--user_prompt_num` flag to 4. 
+
+### Example usage. 
+To run with Qwen3-8B, analogical prompting, standard system prompt and the original digit-matrix problems, use: 
+
+`python eval_gpt_matprob.py --id Qwen/Qwen3-8B --user_prompt_num 4 --sys_prompt_num 1 --prob_format digits`
+
+## Get accuracies
+To obtain accuracies from saved results, run `get_accuracies.py`.
+
+### Example usage. 
+For analogical prompting and the model Qwen3-8B on the problems with alternative coordinates, use: 
+ 
+`python get_accuracies.py --model Qwen_Qwen3-8B --sys_prompt 1 --user_prompt 4 --prob_format coords`
 
 ## Results
 Results are stored in `results` directory as `.npz` files. Results are processed and saved as csv in `all_data.csv`.

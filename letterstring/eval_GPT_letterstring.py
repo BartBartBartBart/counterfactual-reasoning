@@ -7,7 +7,6 @@ import time
 import sys
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
-from huggingface_hub import login
 
 start = time.time()
 
@@ -25,26 +24,30 @@ parser.add_argument('--num_permuted', help="give a number of letters in the alph
 parser.add_argument('--gpt', help='give gpt model: 3, 35, 4', default=None)
 parser.add_argument('--model', help='give model name', default=None)
 parser.add_argument('--gen', help='give gen for generalized problems or nogen for non generalized')
-parser.add_argument('--hf_token', help='Huggingface token for model loading', default=None)
 parser.add_argument('--verbose', action='store_true', help="Print verbose output.")
-parser.add_argument('--extra-split', action='store_true', help="Test only 3gensplit7")
-parser.add_argument('--use-8bit', action='store_true', help="Use 8-bit quantization to save memory (may be slower)")
 parser.add_argument('--debug', action='store_true', help="Debug mode - do not load large models")
 args = parser.parse_args()
 
-# Helper function to return the generated response of the model in a clean format
 def clean_text(text: str) -> str:
-    if not text:
-        return text
-    text = text.strip()
-    if text.startswith("```") and text.endswith("```"):
-        text = text.strip("`").strip()
-    if len(text) >= 2 and (
-        (text[0] == '"' and text[-1] == '"')
-        or (text[0] == "“" and text[-1] == "”")
-    ):
-        text = text[1:-1].strip()
-    return text
+	"""
+	Clean up model output.
+
+	:param text: raw text output from the model
+	:type text: str
+	:return: cleaned text
+	:rtype: str
+	"""
+	if not text:
+		return text
+	text = text.strip()
+	if text.startswith("```") and text.endswith("```"):
+		text = text.strip("`").strip()
+	if len(text) >= 2 and (
+		(text[0] == '"' and text[-1] == '"')
+		or (text[0] == "“" and text[-1] == "”")
+	):
+		text = text[1:-1].strip()
+	return text
 
 if args.promptstyle == "webb" and int(args.num_permuted) >1:
 	print("promptstyle webb can only be used with an unpermuted alphabet")
@@ -53,16 +56,16 @@ if args.promptstyle == "webb" and int(args.num_permuted) >1:
 # GPT-3 settings
 openai.api_key = "API KEY HERE"
 if args.gpt == '3':
-    kwargs = {"engine":"text-davinci-003", "temperature":0, "max_tokens":40, "stop":"\n", "echo":False, "logprobs":1, }
+	kwargs = {"engine":"text-davinci-003", "temperature":0, "max_tokens":40, "stop":"\n", "echo":False, "logprobs":1, }
 elif args.gpt == '35':
-    kwargs = { "model":"gpt-3.5-turbo", "temperature":0, "max_tokens":40, "stop":"\n"}
+	kwargs = { "model":"gpt-3.5-turbo", "temperature":0, "max_tokens":40, "stop":"\n"}
 elif args.gpt == '4':
-    kwargs = { "model":"gpt-4", "temperature":0, "max_tokens":40, "stop":"\n"}
+	kwargs = { "model":"gpt-4", "temperature":0, "max_tokens":40, "stop":"\n"}
 	
 # Load Qwen3  
 elif args.model is not None and not args.debug:
 	print(f"Loading model {args.model}...")
-	MAX_NEW_TOKENS = 128  # Reduced from 256 - letterstring answers are short
+	MAX_NEW_TOKENS = 128
 
 	# Check available GPU memory
 	if torch.cuda.is_available():
@@ -76,18 +79,9 @@ elif args.model is not None and not args.debug:
 		"torch_dtype": torch.bfloat16 if torch.cuda.is_available() else torch.float32,
 		"trust_remote_code": True,
 		"low_cpu_mem_usage": True,
+		"device_map": "cuda:0" if torch.cuda.is_available() else "cpu",
 	}
-	
-	# Use 8-bit quantization if requested (saves memory but may be slower)
-	if args.use_8bit:
-		from transformers import BitsAndBytesConfig
-		load_kwargs["quantization_config"] = BitsAndBytesConfig(load_in_8bit=True)
-		load_kwargs["device_map"] = "auto"
-		print("Using 8-bit quantization", flush=True)
-	else:
-		# Force all on GPU 0 - no CPU offloading
-		load_kwargs["device_map"] = "cuda:0"
-	
+		
 	# Try to use Flash Attention 2 for faster inference
 	try:
 		model = AutoModelForCausalLM.from_pretrained(
@@ -117,23 +111,11 @@ elif args.model is not None and not args.debug:
 	model.eval()
 	torch.set_grad_enabled(False)
 
-
 # Load all problems
 if args.gen == 'gen' and args.num_permuted == "symb":
-	all_prob = np.load(f'./problems/{args.gen}/all_prob_{args.num_permuted}_14_gpt_human_alphs.npz', allow_pickle=True)['all_prob']
+	all_prob = np.load(f'./problems/{args.gen}/all_prob_{args.num_permuted}_14_gpt_human_alphs.npz', allow_pickle=True)['all_prob'].item()
 	
-	# # Sanity check, loop through all alphabets and print problem types and number of trials
-	all_prob = all_prob.item()
-	# for alph in all_prob.keys():
-	# 	print(f"Alphabet: {alph}")
-	# 	for prob_type in all_prob[alph].keys():
-	# 		if prob_type in ['shuffled_letters', 'shuffled_alphabet']:
-	# 			continue
-	# 		num_trials = len(all_prob[alph][prob_type])
-	# 		# print(all_prob[alph][prob_type])
-	# 		print(f"  Problem type: {prob_type}, Number of trials: {num_trials}")
-
-	# Take only first 7 alphabets and 1-gen problems
+	# Take only first 7 alphabets and 1-gen problems for consistency with Lewis & Mitchell
 	all_prob_filtered = {}
 	for id, alph in enumerate(all_prob.keys()):
 		if id >= 7:
@@ -146,18 +128,6 @@ if args.gen == 'gen' and args.num_permuted == "symb":
 
 	# convert back to nd array for consistency
 	all_prob = np.array(all_prob, dtype=object)
-
-	# # Sanity check, loop through all alphabets and print problem types and number of trials
-	# for alph in all_prob.keys():
-	# 	print(f"Alphabet: {alph}")
-	# 	for prob_type in all_prob[alph].keys():
-	# 		if prob_type in ['shuffled_letters', 'shuffled_alphabet']:
-	# 			continue
-	# 		num_trials = len(all_prob[alph][prob_type])
-	# 		# print(all_prob[alph][prob_type])
-	# 		print(f"  Problem type: {prob_type}, Number of trials: {num_trials}")
-	# sys.exit()
-
 elif args.gen == 'gen':
 	all_prob = np.load(f'./problems/{args.gen}/all_prob_{args.num_permuted}_7_gpt_human_alphs.npz', allow_pickle=True)['all_prob']
 elif args.gen == 'nogen':
@@ -165,7 +135,8 @@ elif args.gen == 'nogen':
 
 response_dict={}
 
-for alph in all_prob.item().keys(): # use all_prob.item().keys() for all alphabets
+# Loop through alphabets
+for alph in all_prob.item().keys(): 
 	print(alph, flush=True)
 	if (all_prob.item()[alph]['shuffled_letters'] is not None):
 		shuffled_letters = builtins.list(all_prob.item()[alph]['shuffled_letters'])
@@ -180,8 +151,11 @@ for alph in all_prob.item().keys(): # use all_prob.item().keys() for all alphabe
 		'shuffled_alphabet': shuffled_alphabet,
 	}
 
-	prob_types = builtins.list(all_prob.item()[alph].keys())[2:] # first two items are list of shuffled letters and shuflled alphabet: skip this
-	N_prob_types = len(prob_types) # -1 # minus 1 to skip attention problems
+	# First two items are list of shuffled letters and shuflled alphabet: skip this
+	prob_types = builtins.list(all_prob.item()[alph].keys())[2:]
+
+	# Minus 1 to skip attention problems, which we are not evaluating here
+	N_prob_types = len(prob_types)
 
 	alph_string = ' '.join(shuffled_alphabet)
 	print(alph_string, flush=True)
@@ -194,11 +168,8 @@ for alph in all_prob.item().keys(): # use all_prob.item().keys() for all alphabe
 			# SKIP ATTENTION PROBLEMS
 			continue
 			alph_string = "For this question, ignore other instructions and respond 'a a a a'"
-		# accidently left out 3gensplit7, test separately
-		elif args.extra_split and prob_types[p] != '3gensplit7':
-			continue
 		print(f"Problem type: {prob_types[p]} - {str(p+1)}/{str(N_prob_types)}", flush=True)
-		# print('problem type ' + str(p+1) + ' of ' + str(N_prob_types) + '... ', flush=True)
+
 		prob_type_responses = []
 		prob_type_targets = []
 		for t in range(N_trials_per_prob_type):
@@ -268,8 +239,6 @@ for alph in all_prob.item().keys(): # use all_prob.item().keys() for all alphabe
 					prompt += '] ['
 				else:
 					prompt += '] [ ? ]'
-				# if args.promptstyle == "analogical":
-				# 	prompt += '\n\nFirst, describe 3 relevant exemplars that are distinct from this problem. Then give the final answer. Answer with only the examples and the final answer with no further explanation. Put your final answer between double brackets.\n'
 			if args.promptstyle == "human":
 				messages = [{'role': 'system', 'content':'You are able to solve letter-string analogies'},
 								{'role': 'user', 'content': "In this study, you will be presented with a series of patterns involving alphanumeric characters, together with an example alphabet.\n\n" +
@@ -289,12 +258,11 @@ for alph in all_prob.item().keys(): # use all_prob.item().keys() for all alphabe
 			else:
 				print("please enter a promptstyle")
 
-	        # If verbose or first trial
+			# If verbose or first trial show the prompt and target
 			if args.verbose or t == 0:
 				print("\n=== PROMPT ===\n", flush=True)
 				print(f"System message: {messages[0]['content']}\n", flush=True)
 				print(f"User message: {messages[1]['content']}\n", flush=True)
-				# print(prompt, flush=True)
 				print("\n--- TARGET LETTERS ---\n", flush=True)
 				print(current_target, flush=True)
 
@@ -303,11 +271,6 @@ for alph in all_prob.item().keys(): # use all_prob.item().keys() for all alphabe
 				for m in messages:
 					comp_prompt += '\n' + m['content']
 				comp_prompt=comp_prompt.strip('\n')
-				# print(comp_prompt)
-			# elif args.model == "Qwen/Qwen3-8B":
-			# 	messages = [{'role': 'user', 'content': prompt}]
-				# print(messages)
-				
 			else:
 				pass
 
@@ -321,7 +284,6 @@ for alph in all_prob.item().keys(): # use all_prob.item().keys() for all alphabe
 						print('trying again...')
 						time.sleep(5)
 				elif args.model.startswith("Qwen"):
-				# elif args.model == "Qwen/Qwen3-8B":
 					# Tokenize
 					text = tokenizer.apply_chat_template(
 						messages,
@@ -332,7 +294,7 @@ for alph in all_prob.item().keys(): # use all_prob.item().keys() for all alphabe
 					inputs = tokenizer([text], return_tensors="pt").to(model.device)
 					pad_id = tokenizer.eos_token_id if tokenizer.pad_token_id is None else tokenizer.pad_token_id
 					# Generate
-					with torch.inference_mode():  # Faster than torch.no_grad()
+					with torch.inference_mode():
 						gen = model.generate(
 							**inputs,
 							max_new_tokens=MAX_NEW_TOKENS,
@@ -346,8 +308,10 @@ for alph in all_prob.item().keys(): # use all_prob.item().keys() for all alphabe
 						)
 					out = tokenizer.batch_decode(gen[:, inputs["input_ids"].shape[1]:], skip_special_tokens=True)[0]
 					clean_out = clean_text(out)
+
 					if args.verbose or t == 0:
 						print(f"Full Qwen output: {clean_out}", flush=True)
+
 					# Filter the answer, take only the content inside double brackets [[ answer ]]
 					if '[[' in clean_out and ']]' in clean_out:
 						start_idx = clean_out.index('[[') + 2
@@ -361,7 +325,6 @@ for alph in all_prob.item().keys(): # use all_prob.item().keys() for all alphabe
 					del inputs, gen
 					if torch.cuda.is_available():
 						torch.cuda.empty_cache()
-					# print("Filtered response:", clean_out)
 				else:
 					try:
 						response = openai.ChatCompletion.create(messages=messages, **kwargs)
@@ -371,12 +334,10 @@ for alph in all_prob.item().keys(): # use all_prob.item().keys() for all alphabe
 
 			if args.gpt =='3':
 				prob_type_responses.append(response['choices'][0]['text'])
-			# elif args.model == "Qwen/Qwen3-8B":
 			elif args.model.startswith("Qwen"):
 				prob_type_responses.append(response[0])
 			else:
 				prob_type_responses.append(response['choices'][0]['message']['content'])
-				# print(response)
 			count += 1
 		
 		# Store this problem type's responses and targets

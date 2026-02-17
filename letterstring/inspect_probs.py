@@ -1,4 +1,3 @@
-import openai
 import numpy as np
 import builtins
 import argparse
@@ -25,25 +24,38 @@ def check_path(path):
 	if not os.path.exists(path):
 		os.mkdir(path)
 
-# Helper function to return the generated response of the model in a clean format
 def clean_text(text: str) -> str:
-    if not text:
-        return text
-    text = text.strip()
-    if text.startswith("```") and text.endswith("```"):
-        text = text.strip("`").strip()
-    if len(text) >= 2 and (
-        (text[0] == '"' and text[-1] == '"')
-        or (text[0] == "“" and text[-1] == "”")
-    ):
-        text = text[1:-1].strip()
-    return text
+	"""
+	Clean up model output.
+
+	:param text: raw text output from the model
+	:type text: str
+	:return: cleaned text
+	:rtype: str
+	"""
+	if not text:
+		return text
+	text = text.strip()
+	if text.startswith("```") and text.endswith("```"):
+		text = text.strip("`").strip()
+	if len(text) >= 2 and (
+		(text[0] == '"' and text[-1] == '"')
+		or (text[0] == "“" and text[-1] == "”")
+	):
+		text = text[1:-1].strip()
+	return text
 
 def check_partly_correct(true, pred):
     """
     Manual check for partly correct predictions (pred != true, but true in pred.)
     e.g. true = 'abcd', pred = 'abc][abcd' --> correct
-    Returns True if partly correct, False otherwise. 
+
+	:param true: the correct answer
+	:type true: str
+	:param pred: the model's prediction
+	:type pred: str
+	:return: whether the prediction is partly correct
+	:rtype: bool
     """
     # if multiple indices, take last one
     indices = [i for i in range(len(pred)) if pred.startswith(true, i)]
@@ -52,12 +64,19 @@ def check_partly_correct(true, pred):
         before = pred[index-1] if index > 0 else ' '
         after = pred[index+len(true)] if index + len(true) < len(pred) else ' '
         if before in ['['] and after in [' ', ']']:
-            # print(f"partly correct: True: {true}, Pred: {pred}")
             return True
-        # print(f"Not partly correct due to surrounding chars: True: {true}, Pred: {pred}, before {before}, after {after}")
     return False
 
 def create_prompt(promptstyle, prob, alph_string):
+	"""
+	Create prompt based on the specified style and problem.
+	
+	:param promptstyle: prompting style to use (e.g. 'minimal', 'hw', 'webb', 'webbplus', 'analogical')
+	:param prob: the specific problem instance
+	:param alph_string: string representation of the alphabet to include in the prompt
+	:return: a list of messages formatted for the chat model
+	:rtype: list of dicts
+	"""
 	prompt=''
 	if promptstyle not in ["minimal", "hw", "webb","webbplus", "analogical"]:			
 		prompt+='Use the following alphabet to guess the missing piece.\n\n' \
@@ -120,6 +139,15 @@ def create_prompt(promptstyle, prob, alph_string):
 	return messages
 
 def get_probs(messages, model, tokenizer):
+	"""
+	Do a forward pass through the model to get token probabilities for the generated answer.
+	
+	:param messages: messages to feed into the model, formatted as a list of dicts with 'role' and 'content'
+	:param model: a Qwen3 model instance loaded from HuggingFace
+	:param tokenizer: the corresponding tokenizer for the Qwen3 model
+	:return: generated token ids, scores for each generation step, and the full generated text
+	:rtype: tuple (generated_ids, scores, full_text)
+	"""
 	text = tokenizer.apply_chat_template(
 		messages,
 		tokenize=False,
@@ -129,19 +157,19 @@ def get_probs(messages, model, tokenizer):
 	inputs = tokenizer([text], return_tensors="pt").to(model.device)
 	pad_id = tokenizer.eos_token_id if tokenizer.pad_token_id is None else tokenizer.pad_token_id
 	# Generate
-	with torch.inference_mode():  # Faster than torch.no_grad()
+	with torch.inference_mode(): 
 		outputs = model.generate(
 			**inputs,
 			max_new_tokens=MAX_NEW_TOKENS,
 			do_sample=False,
-			temperature=1.0, # 1 for accurate probabilities, because 0 can lead to overconfident outputs
+			temperature=1.0, 
 			top_p=1.0,
 			eos_token_id=tokenizer.eos_token_id,
 			pad_token_id=pad_id,
 			use_cache=True,  # Enable KV caching for faster generation
 			num_beams=1,  # Greedy decoding (faster than beam search)
-			output_scores=True,  # KEY: Returns logits for each step
-			return_dict_in_generate=True,  # KEY: Returns structured output
+			output_scores=True,  # Returns logits for each step
+			return_dict_in_generate=True,  # Returns structured output
 		)
 	
 	# Extract generated tokens and scores
@@ -151,7 +179,14 @@ def get_probs(messages, model, tokenizer):
 	return generated_ids, scores, full_text
 
 def determine_correctness(pred, current_target):
-	"""Filter output for answer and compare with ground truth"""
+	"""
+	Filter output for answer and compare with ground truth.
+	
+	:param pred: raw text output from the model
+	:param current_target: the correct answer for the current problem instance
+	:return: whether the model's prediction is correct, and the cleaned true answer
+	:rtype: tuple (correct, true)
+	"""
 	# Filter the answer, take only the content inside double brackets [[ answer ]]
 	if '[[' in pred and ']]' in pred:
 		start_idx = pred.index('[[') + 2
@@ -174,7 +209,15 @@ def determine_correctness(pred, current_target):
 	return correct, true
 
 def find_final_answer(generated_ids, verbose=False):
-	"""Search the answer for double or single brackets."""
+	"""
+	Search the answer for double or single brackets.
+	
+	:param generated_ids: list of token ids generated by the model
+	:param verbose: whether to print verbose output about the search process
+
+	:return: the start and end token indices of the final answer (excluding brackets)
+	:rtype: tuple (final_answer_start, final_answer_end) or (None, None) if not found
+	"""
 	# Search for opening double bracket
 	final_answer_start = None
 	for token_idx, token_id in enumerate(generated_ids):
@@ -222,7 +265,18 @@ def find_final_answer(generated_ids, verbose=False):
 	return final_answer_start, final_answer_end	
 
 def calculate_token_probability(tokenizer, scores, generated_ids, token_indices, verbose=False, label=""):
-	"""Calculate total probability for a sequence of token indices."""
+	"""
+	Calculate total probability for a sequence of token indices.
+	
+	:param tokenizer: the tokenizer used to decode token ids
+	:param scores: tuple of tensors containing logits for each generation step
+	:param generated_ids: list of token ids generated by the model
+	:param token_indices: list of token indices for which to calculate the probability
+	:param verbose: whether to print verbose output about the calculation process
+	:param label: a label to identify the token sequence being evaluated (e.g. "final answer", "exemplar 1")
+	:return: the total probability of the specified token sequence
+	:rtype: float
+	"""
 	logprob = 0.0
 	
 	if verbose:
@@ -234,10 +288,6 @@ def calculate_token_probability(tokenizer, scores, generated_ids, token_indices,
 		
 		if step >= 0 and step < len(scores):
 			token_logprob = torch.log_softmax(scores[step][0], dim=-1)[tok_id].item()
-			# token_decoded = tokenizer.decode([tok_id])
-			# token_prob = np.exp(token_logprob)
-			# if verbose:
-				# print(f"  token '{token_decoded}' (id {tok_id}) at step {step}, logprob {token_logprob:.4f}, prob {token_prob:.2e}")
 			logprob += token_logprob
 		else:
 			print(f"  WARNING: step {step} out of range for scores (len={len(scores)})")
@@ -249,7 +299,15 @@ def calculate_token_probability(tokenizer, scores, generated_ids, token_indices,
 	return total_prob
 
 def extract_exemplar_probs(tokenizer, output_ap, verbose=False):
-	"""Extract probabilities for the first 3 exemplars."""
+	"""
+	Extract probabilities for the first 3 exemplars.
+	
+	:param tokenizer: the tokenizer used to decode token ids
+	:param output_ap: the output from the model for the analogical prompting condition, containing generated_ids and scores
+	:param verbose: whether to print verbose output about the extraction process
+	:return: a list of probabilities for each exemplar, and a list of total probabilities for each exemplar
+	:rtype: tuple (prob_per_exemplar, total_probs)
+	"""
 	prob_per_exemplar = []
 	total_probs = []
 	in_exemplar = False
@@ -303,7 +361,15 @@ def extract_exemplar_probs(tokenizer, output_ap, verbose=False):
 	return prob_per_exemplar, total_probs
 
 def extract_final_answer_prob(tokenizer, output, verbose=False):
-	"""Extract probability for the final answer between double brackets."""
+	"""
+	Extract probability for the final answer between double brackets.
+	
+	:param tokenizer: the tokenizer used to decode token ids
+	:param output: the output from the model, containing generated_ids and scores
+	:param verbose: whether to print verbose output about the extraction process
+	:return: the total probability of the final answer
+	:rtype: float or None if final answer not found
+	"""
 	final_answer_prob = None
 
 	generated_ids = output["generated_ids"]
@@ -330,8 +396,15 @@ def extract_final_answer_prob(tokenizer, output, verbose=False):
 	return final_answer_prob
 
 def get_relevant_tokens(final_answer_start, final_answer_end, correct_answer, output):
+	"""
+	Finds the token indices for the generated final answer and the corresponding token ids for the correct answer.
+	
+	:param final_answer_start: the token index where the final answer starts (after the opening bracket)
+	:param final_answer_end: the token index where the final answer ends (before the closing bracket)
+	:param correct_answer: the correct answer string
+	:param output: the output from the model, containing generated_ids and scores
+	"""
 	generated_ids = output["generated_ids"]
-	scores = output["generated_ids"]
 
 	# Identify the generated final inner answer (the part between the last '[' and the next ']')
 	last_open = None
@@ -355,14 +428,13 @@ def get_relevant_tokens(final_answer_start, final_answer_end, correct_answer, ou
 			break
 	
 	if gen_answer_end is None:
-		# fallback: use up to final_answer_end (exclusive)
+		# fallback
 		gen_answer_end = final_answer_end
 	
 	# Indices of tokens that form the generated final answer (excluding brackets)
 	gen_indices = list(range(gen_answer_start, gen_answer_end))
 
 	# Tokenize correct answer as if it was written with spaces: 'pqrt' -> tokenize as 'p q r t'
-	# First character without space, subsequent characters with leading space
 	correct_answer_tokens = []
 	clean_answer = correct_answer.replace(" ", "")  # Remove any existing spaces
 	for i, char in enumerate(clean_answer):
@@ -382,16 +454,21 @@ def get_relevant_tokens(final_answer_start, final_answer_end, correct_answer, ou
 
 	return gen_indices, correct_answer_tokens		
 
-
 def get_ratio(tokenizer, scores, generated_ids, gen_indices, correct_answer_tokens, verbose=False):
 	"""
 	Calculate the following ratio using log probability:
-	Ratio = p(correct answer)/p(given answer)
+	Ratio = p(correct answer|previous output) / p(given answer|previous output)
 
-	In case of Analogical Prompting:
-	Ratio = p(correct answer|exemplars)/p(given answer|exemplars)
+	:param tokenizer: the tokenizer used to decode token ids
+	:param scores: tuple of tensors containing logits for each generation step
+	:param generated_ids: list of token ids generated by the model
+	:param gen_indices: list of token indices for the generated final answer
+	:param correct_answer_tokens: list of token ids for the correct answer
+	:param verbose: whether to print verbose output about the calculation process
+	:return: the ratio of probabilities for the correct answer and the generated answer
+	:rtype: float
 	"""
-	# LEFT-align the correct answer to the generated final answer
+	# Align the correct answer to the generated final answer
 	correct_log_sum = 0.0
 	gen_log_sum = 0.0 
 	for i, idx in enumerate(gen_indices):
@@ -413,9 +490,7 @@ def get_ratio(tokenizer, scores, generated_ids, gen_indices, correct_answer_toke
 			print(f"Position {i}: generated '{gen_text}' (id {gen_token_id}) w logp={gen_logp}, correct '{correct_text}' (id {correct_token_id}), correct_logp={correct_logp}")
 		gen_log_sum += gen_logp
 		correct_log_sum += correct_logp
-	
-	# generated_answer_prob = np.exp(gen_log_sum)
-	# correct_answer_prob = np.exp(correct_log_sum)
+
 	ratio = np.exp(correct_log_sum - gen_log_sum)
 
 	if verbose: 
@@ -427,13 +502,15 @@ def get_ratio(tokenizer, scores, generated_ids, gen_indices, correct_answer_toke
 
 def compare_prompting_ratios(tokenizer, output_ap, output_bl, correct_answer=None, verbose=False): 
 	"""
-	Compute ratio using the non-similar tokens between ap and bl.  
+	Compute ratio using the non-similar tokens between analogical prompting (ap) and baseline (bl).  
 		
-	:param tokenizer: Description
-	:param output_ap: Description
-	:param output_bl: Description
-	:param correct_answer: Description
-	:param verbose: Description
+	:param tokenizer: the tokenizer used to decode token ids
+	:param output_ap: the output from the model for the analogical prompting condition, containing generated_ids and scores
+	:param output_bl: the output from the model for the baseline prompting condition, containing generated_ids and scores
+	:param correct_answer: the correct answer string, used to determine which tokens in the generated answer correspond to the correct answer for ratio calculation
+	:param verbose: whether to print verbose output about the calculation process
+	:return: the ratio of probabilities for the correct answer and the generated answer for both analogical prompting and baseline, as well as flags indicating whether the model stopped early or late
+	:rtype: tuple (ratio_ap, flag_ap, ratio_bl, flag_bl)
 	"""
 	final_answer_start_ap, final_answer_end_ap = find_final_answer(output_ap["generated_ids"])
 	final_answer_start_bl, final_answer_end_bl = find_final_answer(output_bl["generated_ids"])
@@ -594,7 +671,6 @@ average_ratios = {gen: {} for gen in gen_types}
 
 # Collect average exemplar probability for each number of permuted letters
 for num_permuted in [1, 2, 5, 10, 20]:
-	# response_dict = {}
 
 	# Initialize lists for this num_permuted
 	exemplar_probs_list = {gen: {"analogical": {'correct': [], 'incorrect': [], 'total': []}, "minimal": {'correct': [], 'incorrect': [], 'total': []}} for gen in gen_types}
@@ -616,8 +692,10 @@ for num_permuted in [1, 2, 5, 10, 20]:
 			
 		shuffled_alphabet = builtins.list(all_prob.item()[alph]['shuffled_alphabet'])
 
-		prob_types = builtins.list(all_prob.item()[alph].keys())[2:] # first two items are list of shuffled letters and shuflled alphabet: skip this
-		N_prob_types = len(prob_types) # -1 # minus 1 to skip attention problems
+		# First two items are list of shuffled letters and shuflled alphabet: skip this
+		prob_types = builtins.list(all_prob.item()[alph].keys())[2:]
+		# Minus 1 to skip attention problems
+		N_prob_types = len(prob_types) 
 		alph_string = ' '.join(shuffled_alphabet)
 
 		# Evaluate
@@ -627,7 +705,6 @@ for num_permuted in [1, 2, 5, 10, 20]:
 			if prob_types[p] == 'attn':
 				# SKIP ATTENTION PROBLEMS
 				continue
-
 			print(f"Problem type: {prob_types[p]} - {str(p+1)}/{str(N_prob_types)}", flush=True)
 
 			for t in range(N_trials_per_prob_type):

@@ -17,8 +17,6 @@ else:
     path = f'./results'
     fname = f'{path}/gpt_matprob_results_{args.prob_format}_{args.model}_prompt_{args.sys_prompt}_{args.user_prompt}.npz'
 
-# fname = './results/gpt_matprob_results_digits_Qwen_Qwen3-8B_prompt_1_4_digits.npz'
-
 data = np.load(fname, allow_pickle=True)
 all_gen_correct_pred = data['all_gen_correct_pred'].item()
 

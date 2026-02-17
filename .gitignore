@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -164,6 +163,3 @@ cython_debug/
 
 # Mac
 *.DS_Store
-=======
-./letterstring/prob_results/*
->>>>>>> 22d66ea7d375a5a45dd47aa6379fd45d770a6797
